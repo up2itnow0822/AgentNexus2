@@ -1,61 +1,53 @@
-# Multi-stage build for AgentNexus Backend
+# AgentNexus Backend Dockerfile
+# Multi-stage build for production optimization
 
-# Development stage
-FROM node:20-alpine AS development
-
-WORKDIR /app
+FROM node:20-alpine AS base
 
 # Install pnpm
-RUN npm install -g pnpm
+RUN npm install -g pnpm@8
+
+# Set working directory
+WORKDIR /app
 
 # Copy package files
 COPY package.json pnpm-lock.yaml* ./
 
 # Install dependencies
-RUN pnpm install
+FROM base AS deps
+RUN pnpm install --frozen-lockfile
 
-# Copy source code
+# Build stage
+FROM base AS builder
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Generate Prisma client
-RUN pnpm db:generate
+RUN pnpm prisma generate
 
-CMD ["pnpm", "dev"]
-
-# Build stage
-FROM node:20-alpine AS builder
-
-WORKDIR /app
-
-RUN npm install -g pnpm
-
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile
-
-COPY . .
-RUN pnpm db:generate
-RUN pnpm build
+# Build TypeScript
+RUN pnpm run build
 
 # Production stage
-FROM node:20-alpine AS production
-
+FROM node:20-alpine AS runner
 WORKDIR /app
 
-RUN npm install -g pnpm
+ENV NODE_ENV=production
 
-# Copy package files and install production dependencies only
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --prod --frozen-lockfile
+# Install pnpm
+RUN npm install -g pnpm@8
 
-# Copy built application from builder stage
+# Copy necessary files
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/prisma ./prisma
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
-USER nodejs
+# Expose port
+EXPOSE 8200
 
-EXPOSE 3000
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:8200/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-CMD ["node", "dist/index.js"]
-
+# Start server
+CMD ["pnpm", "start"]

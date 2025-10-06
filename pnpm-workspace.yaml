@@ -1,0 +1,8 @@
+# pnpm Workspace Configuration for AgentNexus V1
+
+packages:
+  - 'frontend'
+  - 'backend'
+  - 'smart-contracts'
+  - 'agent-runtime'
+

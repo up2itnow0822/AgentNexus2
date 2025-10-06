@@ -1,21 +1,24 @@
 {
   "name": "@agentnexus/smart-contracts",
   "version": "1.0.0",
-  "description": "AgentNexus Smart Contracts",
+  "private": true,
   "scripts": {
     "build": "forge build",
-    "test": "forge test",
+    "test": "forge test -vvv",
     "test:coverage": "forge coverage",
     "test:gas": "forge test --gas-report",
-    "deploy:sepolia": "forge script script/Deploy.s.sol --rpc-url sepolia --broadcast --verify",
-    "deploy:mainnet": "forge script script/Deploy.s.sol --rpc-url mainnet --broadcast --verify",
-    "verify": "forge verify-contract",
-    "clean": "forge clean",
+    "deploy:sepolia": "forge script script/Deploy.s.sol:DeployScript --rpc-url base-sepolia --broadcast --verify",
+    "deploy:mainnet": "forge script script/Deploy.s.sol:DeployScript --rpc-url base --broadcast --verify",
     "lint": "solhint 'src/**/*.sol'",
-    "format": "forge fmt"
+    "format": "prettier --write 'src/**/*.sol'",
+    "slither": "slither src/"
   },
   "devDependencies": {
+    "prettier": "^3.2.4",
+    "prettier-plugin-solidity": "^1.3.1",
     "solhint": "^4.1.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }
-

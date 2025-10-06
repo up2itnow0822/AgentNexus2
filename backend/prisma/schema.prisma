@@ -1,0 +1,196 @@
+// AgentNexus V1 Database Schema
+// PostgreSQL with Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User authentication and profile
+model User {
+  id            String        @id @default(cuid())
+  walletAddress String        @unique @map("wallet_address")
+  email         String?       @unique
+  username      String?       @unique
+  kycStatus     KycStatus     @default(NOT_VERIFIED) @map("kyc_status")
+  isActive      Boolean       @default(true) @map("is_active")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  
+  // Relations
+  purchases     Purchase[]
+  executions    Execution[]
+  entitlements  Entitlement[]
+
+  @@map("users")
+  @@index([walletAddress])
+  @@index([email])
+  @@index([kycStatus])
+}
+
+enum KycStatus {
+  NOT_VERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+// AI Agents available in marketplace
+model Agent {
+  id              String         @id @default(cuid())
+  name            String
+  description     String
+  category        AgentCategory
+  developer       String
+  developerWallet String         @map("developer_wallet")
+  price           Decimal        @db.Decimal(18, 6)
+  priceToken      String         @default("ETH") @map("price_token")
+  version         String         @default("1.0.0")
+  dockerImage     String         @map("docker_image")
+  inputSchema     Json           @map("input_schema")
+  outputSchema    Json           @map("output_schema")
+  status          AgentStatus    @default(ACTIVE)
+  featured        Boolean        @default(false)
+  totalExecutions Int            @default(0) @map("total_executions")
+  totalRevenue    Decimal        @default(0) @db.Decimal(18, 6) @map("total_revenue")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  
+  // Relations
+  purchases       Purchase[]
+  executions      Execution[]
+  entitlements    Entitlement[]
+
+  @@map("agents")
+  @@index([category])
+  @@index([status])
+  @@index([developer])
+  @@index([featured])
+}
+
+enum AgentCategory {
+  TRADING
+  ANALYTICS
+  DEFI
+  NFT
+  SOCIAL
+  UTILITY
+  CUSTOM
+}
+
+enum AgentStatus {
+  ACTIVE
+  INACTIVE
+  DEPRECATED
+  UNDER_REVIEW
+}
+
+// Agent purchase records
+model Purchase {
+  id              String         @id @default(cuid())
+  userId          String         @map("user_id")
+  agentId         String         @map("agent_id")
+  amount          Decimal        @db.Decimal(18, 6)
+  token           String
+  transactionHash String         @unique @map("transaction_hash")
+  blockNumber     BigInt         @map("block_number")
+  status          PurchaseStatus @default(PENDING)
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  
+  // Relations
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent           Agent          @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  executions      Execution[]
+
+  @@map("purchases")
+  @@index([userId])
+  @@index([agentId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum PurchaseStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  REFUNDED
+}
+
+// Agent execution records
+model Execution {
+  id              String          @id @default(cuid())
+  userId          String          @map("user_id")
+  agentId         String          @map("agent_id")
+  purchaseId      String          @map("purchase_id")
+  inputData       Json            @map("input_data")
+  outputData      Json?           @map("output_data")
+  status          ExecutionStatus @default(PENDING)
+  containerId     String?         @map("container_id")
+  startTime       DateTime        @default(now()) @map("start_time")
+  endTime         DateTime?       @map("end_time")
+  duration        Int?            // milliseconds
+  errorMessage    String?         @map("error_message")
+  logs            String?         @db.Text
+  createdAt       DateTime        @default(now()) @map("created_at")
+  
+  // Relations
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent           Agent           @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  purchase        Purchase        @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+
+  @@map("executions")
+  @@index([userId])
+  @@index([agentId])
+  @@index([purchaseId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum ExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  TIMEOUT
+  CANCELLED
+}
+
+// ERC-1155 entitlement tokens
+model Entitlement {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  agentId     String   @map("agent_id")
+  tokenId     BigInt   @map("token_id")
+  balance     Int      @default(1)
+  isActive    Boolean  @default(true) @map("is_active")
+  expiresAt   DateTime? @map("expires_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent       Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, agentId, tokenId])
+  @@map("entitlements")
+  @@index([userId])
+  @@index([agentId])
+  @@index([isActive])
+}
+
+// System configuration and metadata
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_config")
+}
+
