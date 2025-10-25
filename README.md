@@ -541,3 +541,5 @@ Built with support from:
 ---
 
 *For detailed 12-week roadmap and grant strategy, see [GRANT_STRATEGY_5_PANEL_REVIEW.md](./GRANT_STRATEGY_5_PANEL_REVIEW.md)*
+
+Primary network: Base chain (Base.org). Project remains multi-chain (Arbitrum, Optimism, Ethereum, etc.).
