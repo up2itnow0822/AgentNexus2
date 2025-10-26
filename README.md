@@ -561,7 +561,7 @@ Base is the primary network. Test deployments use Base Sepolia. Final mainnet ad
 | AgentNexusEntitlements | TBD | TBD |
 
 Notes:
-- This section auto-updates after successful deploys via the deployment report at .
+- This section auto-updates after successful deploys via the deployment report at reports/DEPLOYED_CONTRACTS_BASE_SEPOLIA.md.
 - For setup and deployment steps, see:
   - 
   - 
