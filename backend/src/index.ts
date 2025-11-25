@@ -24,7 +24,7 @@ export const prisma = new PrismaClient();
 
 // Initialize Analytics service
 import { AnalyticsService } from './services/AnalyticsService';
-export const analytics = new AnalyticsService();
+export const analytics = new AnalyticsService(prisma);
 
 // Initialize Express app
 const app: Application = express();

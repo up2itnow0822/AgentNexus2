@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { VectorMemory } from '../memory/VectorMemory';
 import { AgentZeroAdapter } from './AgentZeroAdapter';
+import { WalletService } from '../WalletService';
 
 interface Tool {
     name: string;
@@ -12,38 +13,46 @@ export class AgentZero {
     private openai: OpenAI;
     private memory: VectorMemory;
     private adapter: AgentZeroAdapter;
+    private walletService: WalletService;
     private tools: Tool[];
 
-    constructor(memory: VectorMemory, adapter: AgentZeroAdapter) {
+    constructor(
+        memory: VectorMemory,
+        adapter: AgentZeroAdapter,
+        walletService: WalletService
+    ) {
         this.memory = memory;
         this.adapter = adapter;
+        this.walletService = walletService;
         this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
         this.tools = [
             {
+                name: 'check_wallet',
+                description: 'Check your own wallet balance and address. No input required.',
+                execute: async () => {
+                    // In a real implementation, we'd get the agent's specific TBA address
+                    // For now, we'll use a deterministic address based on agent-zero ID
+                    const address = await this.walletService.getAgentAddress('agent-zero');
+                    const balance = await this.walletService.getBalance(address);
+                    return `Address: ${address}\nBalance: ${balance} ETH`;
+                }
+            },
+            {
                 name: 'code_interpreter',
                 description: 'Execute Python code. Input should be valid Python code.',
                 execute: async (code: string) => {
-                    // Use the adapter to execute code in the secure container
-                    // We need a dummy request object here, or refactor adapter to expose a raw execute method
-                    // For now, we'll assume we can call a method on adapter or construct a request
-                    // Actually, adapter.execute takes a full request. Let's mock a request.
-                    // Ideally, we should refactor adapter to separate container management from request handling.
-                    // But for now, let's assume we pass a special flag or just use the existing flow.
-                    // Wait, adapter.execute spins up a container. We might want to keep the container alive for the session.
-                    // The current adapter creates a container per request.
-                    // For ReAct, we want a persistent session.
-                    // Let's assume for this MVP we spin up a new container for each code block (slow but safe).
+                    // Check balance before expensive operation
+                    const address = await this.walletService.getAgentAddress('agent-zero');
+                    const balance = await this.walletService.getBalance(address);
+                    if (parseFloat(balance) < 0.001) {
+                        throw new Error("Insufficient funds to execute code. Please request funding.");
+                    }
 
-                    // TODO: Refactor for persistent sessions
                     const result = await this.adapter.execute({
-                        userId: 'system', // or pass real userId
+                        userId: 'system',
                         agentId: 'agent-zero',
-                        prompt: code, // The adapter expects a prompt, but if it's "quick mode", it sends it to the container's API.
-                        // The container's API executes the prompt.
-                        // If the container is "Agent Zero" image, it expects a chat prompt.
-                        // If we want raw code execution, we might need a different endpoint on the container.
-                        // Let's assume the prompt IS the code for now, or we wrap it.
+                        prompt: code,
                         tier: 'PRO'
                     });
                     return result.response || 'No output';
@@ -61,12 +70,24 @@ export class AgentZero {
     }
 
     async run(userId: string, prompt: string): Promise<string> {
+        // 0. Autonomous Check: Ensure solvency
+        const address = await this.walletService.getAgentAddress('agent-zero');
+        const balance = await this.walletService.getBalance(address);
+
+        if (parseFloat(balance) < 0.005) {
+            console.warn(`[AgentZero] Low balance (${balance} ETH). Requesting funds.`);
+            // In a real system, this might trigger a notification or a specific "Request Funds" tool
+        }
+
         // 1. Retrieve Context
         const memories = await this.memory.searchMemories('agent-zero', prompt);
         const context = memories.map(m => m.content).join('\n');
 
         const systemPrompt = `
-You are Agent Zero, an advanced AI capable of reasoning and using tools.
+You are Agent Zero, an advanced AI capable of reasoning, using tools, and managing your own finances.
+Your Wallet Address: ${address}
+Your Current Balance: ${balance} ETH
+
 You have access to the following tools:
 
 ${this.tools.map(t => `${t.name}: ${t.description}`).join('\n')}
@@ -74,7 +95,7 @@ ${this.tools.map(t => `${t.name}: ${t.description}`).join('\n')}
 Use the following format:
 
 Question: the input question you must answer
-Thought: you should always think about what to do
+Thought: you should always think about what to do (including checking your budget)
 Action: the action to take, should be one of [${this.tools.map(t => t.name).join(', ')}]
 Action Input: the input to the action
 Observation: the result of the action

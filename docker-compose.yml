@@ -1,9 +1,9 @@
-version: '3.8'
+
 
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: agentnexus-db
     restart: unless-stopped
     environment:
@@ -14,7 +14,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/init:/docker-entrypoint-initdb.d
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U agentnexus"]
       interval: 10s
@@ -41,58 +41,36 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      target: development
+      target: runner # Use production build to avoid mounting source code
     container_name: agentnexus-backend
     restart: unless-stopped
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       DATABASE_URL: postgresql://agentnexus:${DB_PASSWORD:-devpassword}@postgres:5432/agentnexus
       REDIS_URL: redis://redis:6379
       PORT: 3000
+      MAINNET_RPC_URL: ${MAINNET_RPC_URL}
+      # DOCKER_HOST for spawning sibling containers if needed
+      DOCKER_HOST: tcp://agent-runtime:2375
     ports:
       - "3000:3000"
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: pnpm dev
 
-  # Frontend Application
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      target: development
-    container_name: agentnexus-frontend
-    restart: unless-stopped
-    environment:
-      NODE_ENV: development
-      NEXT_PUBLIC_API_URL: http://localhost:3000
-    ports:
-      - "3001:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
-    depends_on:
-      - backend
-    command: pnpm dev
 
-  # Agent Runtime (Docker-in-Docker)
+  # Agent Runtime (Docker-in-Docker) - Required for Docker-based agents
   agent-runtime:
     image: docker:24-dind
     container_name: agentnexus-agent-runtime
     privileged: true
     restart: unless-stopped
     environment:
-      DOCKER_TLS_CERTDIR: /certs
+      DOCKER_TLS_CERTDIR: "" # Disable TLS for internal comms
     volumes:
       - agent_runtime_data:/var/lib/docker
-      - ./agent-runtime:/runtime
     ports:
       - "2375:2375"
 
