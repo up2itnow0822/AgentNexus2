@@ -4,6 +4,7 @@ import { createModularAccountAlchemyClient } from '@alchemy/aa-alchemy';
 import { baseSepolia, base } from 'viem/chains';
 import { LocalAccountSigner } from '@alchemy/aa-core';
 import { generatePrivateKey } from 'viem/accounts';
+import { createPublicClient, http, formatEther } from 'viem';
 
 const router: Router = Router();
 
@@ -90,14 +91,23 @@ router.get('/info/:address', async (req: Request, res: Response) => {
   try {
     const { address } = req.params;
 
-    // In a real implementation, we would query the blockchain to see if code exists at this address
-    // and fetch its balance.
+    // Create public client for reading chain state
+    const chain = getChain(84532); // Default to Base Sepolia for now, or pass via query param
+    const publicClient = createPublicClient({
+      chain,
+      transport: http()
+    });
 
-    // Mock response for now to enable the endpoint
+    // Fetch code and balance in parallel
+    const [bytecode, balanceWei] = await Promise.all([
+      publicClient.getBytecode({ address: address as `0x${string}` }),
+      publicClient.getBalance({ address: address as `0x${string}` })
+    ]);
+
     res.json({
       address,
-      isDeployed: false, // TODO: Check code at address
-      balance: '0', // TODO: Fetch balance
+      isDeployed: !!bytecode,
+      balance: formatEther(balanceWei),
       type: 'ModularAccount'
     });
 

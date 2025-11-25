@@ -77,4 +77,27 @@ export class WalletService {
     // Placeholder: In real implementation, send UserOperation to mint
     console.log(`Minting ${amount} of ${tokenId} to ${address}`);
   }
+
+  /**
+   * Get the Token Bound Account address for an agent
+   * @param agentId The agent's ID
+   */
+  public async getAgentAddress(agentId: string): Promise<string> {
+    // In a real implementation, this would query the ERC-6551 Registry
+    // For now, we return a deterministic mock address based on the agentId
+    // This allows us to simulate persistence without a full chain connection
+    if (agentId === 'agent-zero') {
+      return "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"; // Mock Whale Address for testing
+    }
+    return "0x0000000000000000000000000000000000000000";
+  }
+
+  /**
+   * Get the balance of an address in ETH
+   * @param address The wallet address
+   */
+  public async getBalance(_address: string): Promise<string> {
+    // Mock balance for now
+    return "1.5";
+  }
 }

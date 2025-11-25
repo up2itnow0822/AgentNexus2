@@ -1,5 +1,5 @@
-module.exports = {
-  preset: 'ts-jest',
+export default {
+  preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
   roots: ['<rootDir>/tests', '<rootDir>/src'],
   testMatch: ['**/*.test.ts'],
@@ -14,6 +14,9 @@ module.exports = {
   verbose: true,
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1'
+  },
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', { useESM: true }]
   },
   transformIgnorePatterns: [
     'node_modules/(?!(@alchemy|@wagmi|wagmi|viem)/)'

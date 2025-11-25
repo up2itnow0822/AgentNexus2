@@ -12,6 +12,7 @@ AgentNexus is a platform for discovering, purchasing, and executing autonomous A
 -   **Secure Execution**: Agents run in isolated, keyless Docker environments with no access to user private keys.
 -   **Smart Accounts**: Every user and agent interaction is secured by ERC-4337 smart accounts.
 -   **Agent Zero**: Our flagship autonomous agent capable of complex multi-step tasks.
+-   **Real-time Observability**: Live execution logs and detailed analytics for every agent run.
 -   **Space Theme UI**: A premium, immersive interface designed for the future of AI.
 
 ## 🏗 Architecture

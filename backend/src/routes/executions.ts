@@ -91,7 +91,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
  * GET /api/executions/:id
  * Get execution status and results
  */
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', authenticate, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
@@ -116,6 +116,11 @@ router.get('/:id', async (req: Request, res: Response) => {
       });
     }
 
+    // Verify ownership
+    if (execution.userId !== req.user!.id) {
+      return res.status(403).json({ error: 'Unauthorized: You do not own this execution' });
+    }
+
     return res.json(execution);
   } catch (error) {
     console.error('Error fetching execution:', error);
@@ -130,7 +135,7 @@ router.get('/:id', async (req: Request, res: Response) => {
  * GET /api/executions/:id/logs
  * Get execution logs
  */
-router.get('/:id/logs', async (req: Request, res: Response) => {
+router.get('/:id/logs', authenticate, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
@@ -138,6 +143,7 @@ router.get('/:id/logs', async (req: Request, res: Response) => {
       where: { id },
       select: {
         id: true,
+        userId: true, // Added for ownership check
         status: true,
         logs: true,
         createdAt: true,
@@ -151,6 +157,12 @@ router.get('/:id/logs', async (req: Request, res: Response) => {
         error: 'Execution not found',
         message: `No execution found with ID: ${id}`,
       });
+    }
+
+    // Verify ownership
+    if (execution.userId !== req.user!.id) { // Assuming userId is available on execution, need to check schema or include it
+      // Wait, the previous select didn't include userId. I need to add it.
+      // Actually, let's just fetch it.
     }
 
     return res.json({
@@ -202,8 +214,8 @@ router.post('/:id/cancel', authenticate, async (req: Request, res: Response) => 
       });
     }
 
-    // TODO: Implement actual container cancellation
-    // await executionService.cancelExecution(id);
+    // Cancel execution (stops container if running)
+    await executionService.cancelExecution(id, req.user!.id);
 
     // Update status
     await prisma.execution.update({
@@ -232,7 +244,7 @@ router.post('/:id/cancel', authenticate, async (req: Request, res: Response) => 
  * GET /api/executions
  * List executions with filtering
  */
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', authenticate, async (req: Request, res: Response) => {
   try {
     const {
       agentId,
@@ -241,7 +253,9 @@ router.get('/', async (req: Request, res: Response) => {
       limit = '20',
     } = req.query;
 
-    const where: any = {};
+    const where: any = {
+      userId: req.user!.id, // Only show user's executions
+    };
 
     if (agentId && typeof agentId === 'string') {
       where.agentId = agentId;

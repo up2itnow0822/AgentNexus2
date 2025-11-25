@@ -35,6 +35,7 @@ import { AgentZeroAdapter } from './agentZero/AgentZeroAdapter';
 import { AgentZeroTierService } from './agentZero/AgentZeroTierService';
 import { WalletService } from './WalletService';
 import { agentZeroConfig } from '../config/agentZero';
+import { ElizaAgentService } from './eliza/ElizaAgentService';
 
 export class ExecutionService {
   private docker: Docker | null = null;
@@ -44,6 +45,7 @@ export class ExecutionService {
 
   private adapters: Map<string, AgentAdapter> = new Map();
   private activeContainers: Map<string, string> = new Map(); // executionId -> containerId
+  private elizaService: ElizaAgentService;
 
   constructor(
     private prisma: PrismaClient,
@@ -51,6 +53,7 @@ export class ExecutionService {
   ) {
     this.initializeDocker();
     this.initializeAdapters();
+    this.elizaService = new ElizaAgentService(prisma);
   }
 
   private initializeAdapters() {
@@ -134,7 +137,7 @@ export class ExecutionService {
       throw new ValidationError('Input contains potential injection attempt');
     }
 
-    // 4. Security: Sanitize input to remove control characters and null bytes
+    // 4. Security: Sanitize input
     const sanitizedInput = sanitizeInput(dto.inputData);
     console.log(`🔒 Input sanitized: ${createSafeSummary(sanitizedInput)}`);
 
@@ -174,48 +177,56 @@ export class ExecutionService {
       let logs: string[] = [];
       let duration = 0;
 
-      // Check if we have a specific adapter for this agent
-      const adapter = this.adapters.get(agent.id);
+      // Check for ELIZAOS framework
+      const isElizaAgent = (agent as any).configuration?.framework === 'elizaos';
 
-      if (adapter) {
-        // Use adapter
-        const request: AgentExecutionRequest = {
-          userId,
-          agentId: agent.id,
-          prompt: JSON.stringify(dto.inputData), // Adapter expects prompt string
-          inputData: dto.inputData,
-          tier: 'BASIC', // Default to basic, entitlement check handles upgrades
-        };
-
-        const result = await adapter.execute(request);
-
-        output = result.response ? { message: result.response } : {};
-        logs = result.toolsUsed ? [`Tools used: ${result.toolsUsed.join(', ')}`] : [];
-        duration = result.executionTime || 0;
-
-        // Add any error to logs if present
-        if (result.error) {
-          logs.push(`Error: ${result.error}`);
-        }
+      if (isElizaAgent) {
+        // Start ELIZAOS runtime
+        await this.elizaService.startAgent(agent.id);
+        // For pilot, we just return a success message as we don't have full I/O yet
+        output = { message: "ELIZAOS Agent started/signaled", agentId: agent.id };
+        logs = ["ELIZAOS Runtime initialized"];
+        duration = 100; // Mock duration
       } else {
-        // Fallback to default Docker execution
-        const result = await this.runInDocker(
-          execution,
-          agent,
-          dto.inputData
-        );
-        output = result.output;
-        logs = result.logs;
-        duration = Date.now() - execution.startTime.getTime();
+        // Check if we have a specific adapter for this agent
+        const adapter = this.adapters.get(agent.id);
+
+        if (adapter) {
+          // Use adapter
+          const request: AgentExecutionRequest = {
+            userId,
+            agentId: agent.id,
+            prompt: JSON.stringify(dto.inputData),
+            inputData: dto.inputData,
+            tier: 'BASIC',
+          };
+
+          const result = await adapter.execute(request);
+
+          output = result.response ? { message: result.response } : {};
+          logs = result.toolsUsed ? [`Tools used: ${result.toolsUsed.join(', ')}`] : [];
+          duration = result.executionTime || 0;
+
+          if (result.error) {
+            logs.push(`Error: ${result.error}`);
+          }
+        } else {
+          // Fallback to default Docker execution
+          const result = await this.runInDocker(
+            execution,
+            agent,
+            dto.inputData
+          );
+          output = result.output;
+          logs = result.logs;
+          duration = Date.now() - execution.startTime.getTime();
+        }
       }
 
       // 7. Validate output against agent's schema
       this.validateOutput(agent, output);
 
-      // 8. Calculate execution duration
-      // duration is already calculated above
-
-      // 9. Security: Sanitize logs to remove secrets before storing
+      // 9. Security: Sanitize logs
       const sanitizedLogs = logs.map(log => sanitizeLogs(log));
 
       // 10. Update execution record (status: COMPLETED)
@@ -241,13 +252,17 @@ export class ExecutionService {
       metricsService.recordExecutionStatus('COMPLETED', agent.id);
       metricsService.recordExecutionDuration(agent.id, agent.name, 'COMPLETED', duration);
       metricsService.setRunningExecutions(agent.id, agent.name, 0);
-      metricsService.recordRevenue(agent.id, agent.name, agent.price.toString());
 
-      // 13. Update agent statistics (total executions, revenue)
-      await this.agentService.incrementExecutions(
-        agent.id,
-        agent.price.toString()
-      );
+      // Check if price exists before converting
+      if (agent.price) {
+        metricsService.recordRevenue(agent.id, agent.name, agent.price.toString());
+        await this.agentService.incrementExecutions(
+          agent.id,
+          agent.price.toString()
+        );
+      } else {
+        await this.agentService.incrementExecutions(agent.id, "0");
+      }
 
       return completed;
 
