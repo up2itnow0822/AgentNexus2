@@ -41,6 +41,11 @@ To protect user funds, there is a strict separation between the AI execution env
 -   **Agents** cannot access private keys.
 -   **Agents** can only propose actions via the backend, which requires user approval (or pre-approved session keys).
 
+### 4. Observability & Analytics
+We provide real-time visibility into agent operations.
+-   **WebSocket Service**: Streams execution logs, status updates, and metrics to the frontend in real-time.
+-   **Analytics Service**: Tracks agent performance, usage stats, and user retention using PostHog and Prisma.
+
 ## Data Flow: Agent Execution
 
 1.  **Purchase**: User buys access to an agent (on-chain transaction).

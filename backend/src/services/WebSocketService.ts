@@ -16,7 +16,7 @@
 
 import { Server as HTTPServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
-import { sanitizeLogs } from '../utils/sanitization';
+import { sanitizeLogs } from '../utils/sanitization.js';
 
 /**
  * WebSocket message types
@@ -86,8 +86,15 @@ export class WebSocketService {
       server,
       path,
       // Verify origin in production
-      verifyClient: (_info: any) => {
-        // TODO: Add proper origin verification in production
+      verifyClient: (info: any) => {
+        if (process.env.NODE_ENV === 'production') {
+          const origin = info.origin || info.req.headers.origin;
+          const allowedOrigin = process.env.FRONTEND_URL || 'https://agentnexus.io';
+          if (origin !== allowedOrigin) {
+            console.warn(`🛑 Blocked connection from unauthorized origin: ${origin}`);
+            return false;
+          }
+        }
         return true;
       }
     });

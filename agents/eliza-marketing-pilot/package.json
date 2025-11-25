@@ -1,0 +1,24 @@
+{
+    "name": "@agentnexus/eliza-marketing-pilot",
+    "version": "1.0.0",
+    "description": "Pilot implementation of Social Growth Manager using ELIZAOS",
+    "main": "src/index.ts",
+    "scripts": {
+        "start": "ts-node src/index.ts",
+        "build": "tsc"
+    },
+    "dependencies": {
+        "@elizaos/adapter-postgres": "latest",
+        "@elizaos/core": "latest",
+        "@elizaos/plugin-discord": "latest",
+        "@elizaos/plugin-evm": "^1.0.13",
+        "@elizaos/plugin-solana": "^1.2.6",
+        "@elizaos/plugin-twitter": "latest",
+        "dotenv": "^16.4.5"
+    },
+    "devDependencies": {
+        "@types/node": "^20.11.0",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.3.3"
+    }
+}

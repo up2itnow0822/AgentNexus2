@@ -105,7 +105,7 @@ router.get('/modules', async (req: Request, res: Response) => {
  * POST /api/builder/generate
  * Generate a new custom agent
  */
-router.post('/generate', async (req: Request, res: Response) => {
+router.post('/generate', authenticate, async (req: Request, res: Response) => {
   try {
     const {
       templateId,

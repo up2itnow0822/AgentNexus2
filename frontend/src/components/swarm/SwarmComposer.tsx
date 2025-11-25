@@ -18,10 +18,13 @@ interface Connection {
 }
 
 const agentTypes = [
-    { id: 'marketing', label: 'Marketing Agent', color: '#ec4899' },
+    { id: 'eliza-marketing-pilot', label: 'Marketing Agent (ELIZA)', color: '#ec4899' },
     { id: 'discovery', label: 'First-Mover Agent', color: '#8b5cf6' },
-    { id: 'sentinel', label: 'DeFi Sentinel', color: '#10b981' },
-    { id: 'privacy', label: 'Privacy Guardian', color: '#3b82f6' },
+    { id: 'eliza-defi-sentinel', label: 'DeFi Sentinel (ELIZA)', color: '#10b981' },
+    { id: 'eliza-privacy-guardian', label: 'Privacy Guardian (ELIZA)', color: '#3b82f6' },
+    { id: 'eliza-dex-trader', label: 'DEX Trader (ELIZA)', color: '#f59e0b' },
+    { id: 'eliza-cex-dex-trader', label: 'CEX/DEX Trader (ELIZA)', color: '#ef4444' },
+    { id: 'eliza-yield-farmer', label: 'Yield Farmer (ELIZA)', color: '#84cc16' },
 ];
 
 const SwarmComposer = () => {

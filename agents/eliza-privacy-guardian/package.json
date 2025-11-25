@@ -1,0 +1,21 @@
+{
+    "name": "@agentnexus/eliza-privacy-guardian",
+    "version": "1.0.0",
+    "main": "dist/index.js",
+    "scripts": {
+        "build": "tsc",
+        "start": "node dist/index.js",
+        "dev": "ts-node src/index.ts"
+    },
+    "dependencies": {
+        "@elizaos/core": "latest",
+        "@elizaos/plugin-evm": "latest",
+        "@elizaos/plugin-solana": "latest",
+        "dotenv": "^16.4.1"
+    },
+    "devDependencies": {
+        "typescript": "^5.3.3",
+        "ts-node": "^10.9.2",
+        "@types/node": "^20.11.19"
+    }
+}
