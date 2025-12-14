@@ -135,7 +135,7 @@ forge script script/Deploy.s.sol:TestnetDeployScript \
     --rpc-url $BASE_SEPOLIA_RPC \
     --broadcast \
     --verify \
-    --etherscan-api-key ${ETHERSCAN_KEY:-"dummy"} \
+    --etherscan-api-key "${ETHERSCAN_KEY:-dummy}" \
     -vvvv \
     2>&1 | tee deployment.log
 
