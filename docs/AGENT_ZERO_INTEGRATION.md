@@ -130,7 +130,7 @@ Agent Zero is an open-source autonomous AI agent framework that can:
 
 ```bash
 # After cloning, navigate into the repository directory
-cd <repository-name>
+cd /path/to/your-project-name
 ```
 
 ### Step 2: Install Dependencies
