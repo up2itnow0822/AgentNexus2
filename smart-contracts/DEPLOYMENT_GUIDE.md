@@ -126,7 +126,7 @@ cast send ESCROW_ADDRESS \
 
 ```bash
 # Using cast (Foundry tool)
-cast send CONTRACT_ADDRESS \
+cast send ESCROW_ADDRESS \
   "grantRole(bytes32,address)" \
   $(cast keccak "ORCHESTRATOR_ROLE()") \
   BACKEND_ADDRESS \
