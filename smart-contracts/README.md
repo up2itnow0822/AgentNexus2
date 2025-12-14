@@ -48,6 +48,8 @@ forge script script/Deploy.s.sol --rpc-url $BASE_MAINNET_RPC_URL --broadcast --v
 
 Create a `.env` file:
 
+> **⚠️ Security Warning:** Always use a disposable deployer key. Never use a wallet that holds funds you are not willing to lose.
+
 ```bash
 BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
 BASE_MAINNET_RPC_URL=https://mainnet.base.org
