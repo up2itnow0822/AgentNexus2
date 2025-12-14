@@ -95,4 +95,4 @@ We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for gu
 
 ## License
 
-MIT
+Apache 2.0 - See [LICENSE](./LICENSE) for details.
