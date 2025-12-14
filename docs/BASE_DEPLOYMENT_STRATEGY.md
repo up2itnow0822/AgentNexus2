@@ -128,7 +128,7 @@ base_sepolia = "${BASE_SEPOLIA_RPC_URL}"
 
 [etherscan]
 base = { key = "${ETHERSCAN_API_KEY}" } # BASESCAN_API_KEY remains a supported alias
-base_sepolia = { key = "${ETHERSCAN_API_KEY}" }
+base_sepolia = { key = "${ETHERSCAN_API_KEY}" } # BASESCAN_API_KEY remains a supported alias
 ```
 
 ### Deployment Commands
