@@ -6,12 +6,12 @@ Smart contract deployment addresses for AgentNexus.
 
 | Contract | Address | Verified |
 |----------|---------|----------|
-| AgentNexusEscrow | `0x14F12c3F36DD6Fa860E21f7D51f696231057A8a0` | [Basescan](https://basescan.org/address/0x14F12c3F36DD6Fa860E21f7D51f696231057A8a0) |
-| AgentNexusEntitlements | `0x1662AeCE70441B8482e09f04D3Ef3954a8E26C0d` | [Basescan](https://basescan.org/address/0x1662AeCE70441B8482e09f04D3Ef3954a8E26C0d) |
+| AgentNexusEscrow | `0x37A7B1f10b87f31ad916Fb3518118f8AA0d8d2fC` | [Basescan](https://basescan.org/address/0x37A7B1f10b87f31ad916Fb3518118f8AA0d8d2fC) |
+| AgentNexusEntitlements | `0x3c8f32F9cF41Dc255129d6Add447218053743b33` | [Basescan](https://basescan.org/address/0x3c8f32F9cF41Dc255129d6Add447218053743b33) |
 
 **Chain ID**: 8453  
 **Deployment Date**: December 2024  
-**Release Tag**: [v0.1.0](https://github.com/up2itnow/AgentNexus2/releases/tag/v0.1-base-mainnet)
+**Release Tag**: [v0.1.1-base-mainnet](https://github.com/up2itnow/AgentNexus2/releases/tag/v0.1.1-base-mainnet)
 
 ## Base Sepolia (Testnet)
 

@@ -46,8 +46,8 @@ export const CHAIN_CONFIGS = {
         name: 'Base',
         rpcUrl: 'https://mainnet.base.org',
         contracts: {
-            escrow: '0x0000000000000000000000000000000000000000', // To be deployed
-            entitlements: '0x0000000000000000000000000000000000000000'
+            escrow: '0x37A7B1f10b87f31ad916Fb3518118f8AA0d8d2fC',
+            entitlements: '0x3c8f32F9cF41Dc255129d6Add447218053743b33'
         }
     },
     baseSepolia: {
