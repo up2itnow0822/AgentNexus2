@@ -38,4 +38,4 @@ See [README.md](./README.md) for current status of components.
 
 ---
 
-*Last updated: December 2024*
+*Last updated: December 2025*
