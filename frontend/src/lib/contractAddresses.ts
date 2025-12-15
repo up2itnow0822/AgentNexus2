@@ -31,8 +31,8 @@ export const CONTRACT_ADDRESSES: Record<number, ChainContracts> = {
     },
     // Base Mainnet - Primary chain
     8453: {
-        entitlements: '0x0000000000000000000000000000000000000000' as Address,
-        escrow: '0x0000000000000000000000000000000000000000' as Address,
+        entitlements: '0x3c8f32F9cF41Dc255129d6Add447218053743b33' as Address,
+        escrow: '0x37A7B1f10b87f31ad916Fb3518118f8AA0d8d2fC' as Address,
     },
     // Arbitrum One
     42161: {
