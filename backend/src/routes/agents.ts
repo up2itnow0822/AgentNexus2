@@ -309,6 +309,220 @@ router.delete('/:id', authenticate, async (req: Request, res: Response) => {
   }
 });
 
+// ============================================
+// x402 Premium Endpoints (Pay-per-request)
+// ============================================
+
+import { x402Paywall, x402Enabled } from '../middleware/x402';
+
+/**
+ * GET /api/agents/:id/premium-analytics
+ * Premium analytics data for an agent - requires x402 payment
+ * 
+ * Price: 0.05 USDC per request
+ * 
+ * When x402 is disabled, returns 503 Service Unavailable
+ */
+router.get(
+  '/:id/premium-analytics',
+  x402Paywall('0.05', 'Premium agent analytics access'),
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+
+      const agent = await prisma.agent.findUnique({
+        where: { id },
+        include: {
+          executions: {
+            select: {
+              id: true,
+              status: true,
+              duration: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 100,
+          },
+          purchases: {
+            select: {
+              id: true,
+              amount: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 50,
+          },
+        },
+      });
+
+      if (!agent) {
+        return res.status(404).json({
+          error: 'Agent not found',
+          message: `No agent found with ID: ${id}`,
+        });
+      }
+
+      // Calculate premium analytics
+      const executions = agent.executions;
+      const successfulExecutions = executions.filter(e => e.status === 'COMPLETED');
+      const avgDuration = successfulExecutions.length > 0
+        ? successfulExecutions.reduce((sum, e) => sum + (e.duration || 0), 0) / successfulExecutions.length
+        : 0;
+
+      const analytics = {
+        agentId: agent.id,
+        agentName: agent.name,
+        metrics: {
+          totalExecutions: agent.totalExecutions,
+          successRate: executions.length > 0
+            ? (successfulExecutions.length / executions.length * 100).toFixed(2) + '%'
+            : 'N/A',
+          averageExecutionTime: Math.round(avgDuration) + 'ms',
+          totalRevenue: agent.totalRevenue.toString(),
+          recentExecutions: executions.length,
+        },
+        revenueBreakdown: {
+          last7Days: agent.purchases
+            .filter(p => new Date(p.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
+            .reduce((sum, p) => sum + Number(p.amount), 0),
+          last30Days: agent.purchases
+            .filter(p => new Date(p.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
+            .reduce((sum, p) => sum + Number(p.amount), 0),
+        },
+        executionTrend: executions.slice(0, 10).map(e => ({
+          status: e.status,
+          duration: e.duration,
+          date: e.createdAt,
+        })),
+        generatedAt: new Date().toISOString(),
+        x402Payment: {
+          priceUsdc: '0.05',
+          description: 'Premium analytics access',
+        },
+      };
+
+      return res.json(analytics);
+    } catch (error) {
+      console.error('Error fetching premium analytics:', error);
+      return res.status(500).json({
+        error: 'Failed to fetch analytics',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/agents/:id/detailed-metrics
+ * Detailed performance metrics for an agent - requires x402 payment
+ * 
+ * Price: 0.02 USDC per request
+ */
+router.get(
+  '/:id/detailed-metrics',
+  x402Paywall('0.02', 'Detailed agent performance metrics'),
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+
+      const agent = await prisma.agent.findUnique({
+        where: { id },
+        include: {
+          executions: {
+            select: {
+              status: true,
+              duration: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 200,
+          },
+        },
+      });
+
+      if (!agent) {
+        return res.status(404).json({
+          error: 'Agent not found',
+          message: `No agent found with ID: ${id}`,
+        });
+      }
+
+      const executions = agent.executions;
+      const statusCounts = executions.reduce((acc, e) => {
+        acc[e.status] = (acc[e.status] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const durationBuckets = {
+        '<1s': 0,
+        '1-5s': 0,
+        '5-30s': 0,
+        '30s-2m': 0,
+        '>2m': 0,
+      };
+
+      executions.forEach(e => {
+        const d = e.duration || 0;
+        if (d < 1000) durationBuckets['<1s']++;
+        else if (d < 5000) durationBuckets['1-5s']++;
+        else if (d < 30000) durationBuckets['5-30s']++;
+        else if (d < 120000) durationBuckets['30s-2m']++;
+        else durationBuckets['>2m']++;
+      });
+
+      const metrics = {
+        agentId: agent.id,
+        agentName: agent.name,
+        performanceMetrics: {
+          statusDistribution: statusCounts,
+          durationDistribution: durationBuckets,
+          totalSamples: executions.length,
+        },
+        categoryInsights: {
+          category: agent.category,
+          featured: agent.featured,
+          version: agent.version,
+        },
+        generatedAt: new Date().toISOString(),
+        x402Payment: {
+          priceUsdc: '0.02',
+          description: 'Detailed performance metrics',
+        },
+      };
+
+      return res.json(metrics);
+    } catch (error) {
+      console.error('Error fetching detailed metrics:', error);
+      return res.status(500).json({
+        error: 'Failed to fetch metrics',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/agents/x402/status
+ * Check x402 payment status and configuration
+ */
+router.get('/x402/status', (_req: Request, res: Response) => {
+  return res.json({
+    enabled: x402Enabled(),
+    endpoints: [
+      {
+        path: '/api/agents/:id/premium-analytics',
+        priceUsdc: '0.05',
+        description: 'Premium agent analytics access',
+      },
+      {
+        path: '/api/agents/:id/detailed-metrics',
+        priceUsdc: '0.02',
+        description: 'Detailed agent performance metrics',
+      },
+    ],
+    network: process.env.X402_NETWORK || 'base-sepolia',
+    facilitator: process.env.X402_FACILITATOR_URL || 'https://x402.coinbase.com',
+  });
+});
+
 export default router;
-
-
