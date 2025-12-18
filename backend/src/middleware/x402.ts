@@ -24,6 +24,7 @@ import {
     USDC_ADDRESSES,
     DEFAULT_FACILITATOR_URL,
 } from '../types/x402-types';
+import { CCTP_CONFIG } from '../config/cctp';
 
 // Environment-based configuration
 const getConfig = (): X402MiddlewareConfig => ({
@@ -119,24 +120,87 @@ const verifyPayment = async (
 /**
  * Generate payment request for 402 response
  */
-const generatePaymentRequest = (
+export const generatePaymentRequest = (
     endpoint: X402ProtectedEndpoint,
     config: X402MiddlewareConfig
 ): X402PaymentRequest => {
     const network = config.facilitator.network;
     // Use parseUnits for safe decimal-to-smallest-unit conversion (avoids floating-point errors)
     const amountInSmallestUnit = parseUnits(endpoint.priceUsdc, 6).toString();
+    const referenceId = randomUUID();
+    const expiresAt = Math.floor(Date.now() / 1000) + (config.facilitator.paymentTimeout || 300);
 
-    return {
+    const request: X402PaymentRequest = {
         amount: amountInSmallestUnit,
         recipient: config.facilitator.recipientAddress,
         token: USDC_ADDRESSES[network],
         chainId: X402_NETWORKS[network],
         description: endpoint.description,
-        reference: randomUUID(),
-        expiresAt: Math.floor(Date.now() / 1000) + (config.facilitator.paymentTimeout || 300),
+        reference: referenceId,
+        expiresAt: expiresAt,
         facilitatorUrl: config.facilitator.url,
     };
+
+    // Add CCTP routes if enabled
+    if (process.env.ENABLE_CCTP_ROUTES === 'true') {
+        const cctpReciever = process.env.CCTP_BASE_RECEIVER_CONTRACT || config.facilitator.recipientAddress;
+        const isTestnet = network === 'base-sepolia';
+
+        const arbConfig = CCTP_CONFIG[isTestnet ? 'arbitrum-sepolia' : 'arbitrum'];
+        const opConfig = CCTP_CONFIG[isTestnet ? 'optimism-sepolia' : 'optimism'];
+
+        request.routes = [
+            // Option 1: Base Direct (Default)
+            {
+                id: 'base_direct_usdc',
+                amount: amountInSmallestUnit,
+                token: USDC_ADDRESSES[network],
+                sourceChain: X402_NETWORKS[network],
+                destinationChain: X402_NETWORKS[network],
+                destinationReceiver: config.facilitator.recipientAddress,
+                referenceId: referenceId,
+                expiry: expiresAt
+            },
+            // Option 2: Optimism CCTP
+            {
+                id: 'optimism_cctp_to_base',
+                amount: amountInSmallestUnit,
+                token: opConfig.usdcAddress,
+                sourceChain: opConfig.caip2,
+                destinationChain: X402_NETWORKS[network],
+                destinationReceiver: cctpReciever,
+                referenceId: referenceId,
+                expiry: expiresAt,
+                settlement: {
+                    type: 'cctp',
+                    source: opConfig.caip2,
+                    destination: X402_NETWORKS[network],
+                    destinationReceiver: cctpReciever,
+                    referenceId: referenceId
+                }
+            },
+            // Option 3: Arbitrum CCTP
+            {
+                id: 'arbitrum_cctp_to_base',
+                amount: amountInSmallestUnit,
+                token: arbConfig.usdcAddress,
+                sourceChain: arbConfig.caip2,
+                destinationChain: X402_NETWORKS[network],
+                destinationReceiver: cctpReciever,
+                referenceId: referenceId,
+                expiry: expiresAt,
+                settlement: {
+                    type: 'cctp',
+                    source: arbConfig.caip2,
+                    destination: X402_NETWORKS[network],
+                    destinationReceiver: cctpReciever,
+                    referenceId: referenceId
+                }
+            }
+        ];
+    }
+
+    return request;
 };
 
 /**
