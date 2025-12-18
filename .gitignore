@@ -62,3 +62,9 @@ temp/
 smart-contracts/.env
 smart-contracts/env/*.save
 *.save
+
+# x402 sensitive files (private keys, test wallets)
+x402-test-wallets.json
+x402-verification-error.json
+**/x402-test-wallets.json
+**/x402-verification-error.json
