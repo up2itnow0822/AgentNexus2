@@ -237,4 +237,120 @@ describe('x402 Integration Tests', () => {
             expect(expensiveResponse.body.paymentRequest.amount).toBe('1000000'); // 1.00 USDC
         });
     });
+
+    describe('x402 Hardening - Local Validation', () => {
+        beforeEach(() => {
+            process.env.ENABLE_X402 = 'true';
+            process.env.X402_PAYMENT_RECIPIENT = '0x1234567890123456789012345678901234567890';
+            process.env.X402_NETWORK = 'base-sepolia';
+        });
+
+        it('should reject mismatched recipient address', async () => {
+            app.get('/test-recipient', x402Paywall('0.01', 'Test'), (_req, res) => {
+                res.json({ success: true });
+            });
+
+            const badRecipientPayment: X402PaymentPayload = {
+                paymentRequest: {
+                    amount: '10000',
+                    recipient: '0xWRONG_RECIPIENT_ADDRESS_HERE_WRONG_ADDR', // Wrong recipient
+                    token: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
+                    chainId: 'eip155:84532',
+                    reference: 'test-ref',
+                    expiresAt: Math.floor(Date.now() / 1000) + 300,
+                    facilitatorUrl: 'https://x402.coinbase.com',
+                },
+                transactionHash: '0xabc123',
+                signature: 'sig',
+                payer: '0x9876543210987654321098765432109876543210',
+                timestamp: Math.floor(Date.now() / 1000),
+            };
+
+            const response = await request(app)
+                .get('/test-recipient')
+                .set('X-Payment', Buffer.from(JSON.stringify(badRecipientPayment)).toString('base64'));
+
+            expect(response.status).toBe(402);
+            expect(response.body.code).toBe(X402ErrorCode.PAYMENT_INVALID);
+            expect(response.body.error).toContain('recipient mismatch');
+        });
+
+        it('should reject mismatched token address', async () => {
+            app.get('/test-token', x402Paywall('0.01', 'Test'), (_req, res) => {
+                res.json({ success: true });
+            });
+
+            const badTokenPayment: X402PaymentPayload = {
+                paymentRequest: {
+                    amount: '10000',
+                    recipient: '0x1234567890123456789012345678901234567890',
+                    token: '0xWRONG_TOKEN_ADDRESS_HERE_NOT_USDC_ADDR', // Wrong token
+                    chainId: 'eip155:84532',
+                    reference: 'test-ref',
+                    expiresAt: Math.floor(Date.now() / 1000) + 300,
+                    facilitatorUrl: 'https://x402.coinbase.com',
+                },
+                transactionHash: '0xabc123',
+                signature: 'sig',
+                payer: '0x9876543210987654321098765432109876543210',
+                timestamp: Math.floor(Date.now() / 1000),
+            };
+
+            const response = await request(app)
+                .get('/test-token')
+                .set('X-Payment', Buffer.from(JSON.stringify(badTokenPayment)).toString('base64'));
+
+            expect(response.status).toBe(402);
+            expect(response.body.code).toBe(X402ErrorCode.PAYMENT_INVALID);
+            expect(response.body.error).toContain('token mismatch');
+        });
+
+        it('should reject mismatched chain ID', async () => {
+            app.get('/test-chain', x402Paywall('0.01', 'Test'), (_req, res) => {
+                res.json({ success: true });
+            });
+
+            const badChainPayment: X402PaymentPayload = {
+                paymentRequest: {
+                    amount: '10000',
+                    recipient: '0x1234567890123456789012345678901234567890',
+                    token: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
+                    chainId: 'eip155:1', // Wrong chain (mainnet ETH instead of Base Sepolia)
+                    reference: 'test-ref',
+                    expiresAt: Math.floor(Date.now() / 1000) + 300,
+                    facilitatorUrl: 'https://x402.coinbase.com',
+                },
+                transactionHash: '0xabc123',
+                signature: 'sig',
+                payer: '0x9876543210987654321098765432109876543210',
+                timestamp: Math.floor(Date.now() / 1000),
+            };
+
+            const response = await request(app)
+                .get('/test-chain')
+                .set('X-Payment', Buffer.from(JSON.stringify(badChainPayment)).toString('base64'));
+
+            expect(response.status).toBe(402);
+            expect(response.body.code).toBe(X402ErrorCode.PAYMENT_INVALID);
+            expect(response.body.error).toContain('chain mismatch');
+        });
+
+        it('should reject oversized X-Payment headers', async () => {
+            app.get('/test-oversize', x402Paywall('0.01', 'Test'), (_req, res) => {
+                res.json({ success: true });
+            });
+
+            // Create a payload that exceeds 64KB when base64 encoded
+            const oversizedData = 'x'.repeat(100 * 1024); // 100KB of data
+            const oversizedBase64 = Buffer.from(oversizedData).toString('base64');
+
+            const response = await request(app)
+                .get('/test-oversize')
+                .set('X-Payment', oversizedBase64);
+
+            // Should be treated as invalid payment (parsed as null due to size)
+            expect(response.status).toBe(402);
+            expect(response.body.code).toBe(X402ErrorCode.PAYMENT_REQUIRED);
+        });
+    });
 });

@@ -39,10 +39,21 @@ const getConfig = (): X402MiddlewareConfig => ({
 });
 
 /**
+ * Maximum size for X-Payment header (64KB base64 encoded)
+ */
+const MAX_PAYMENT_HEADER_SIZE = 64 * 1024;
+
+/**
  * Parse payment payload from X-PAYMENT header
  */
 const parsePaymentHeader = (header: string | undefined): X402PaymentPayload | null => {
     if (!header) return null;
+
+    // Guard against oversized headers
+    if (header.length > MAX_PAYMENT_HEADER_SIZE) {
+        console.warn('[X402] Payment header exceeds maximum size');
+        return null;
+    }
 
     try {
         const decoded = Buffer.from(header, 'base64').toString('utf-8');
@@ -185,6 +196,38 @@ export const x402Paywall = (priceUsdc: string, description: string) => {
                     code: X402ErrorCode.PAYMENT_REQUIRED,
                     paymentRequest,
                 });
+            return;
+        }
+
+        // Local validation before facilitator call
+        const expectedRecipient = config.facilitator.recipientAddress.toLowerCase();
+        const expectedToken = USDC_ADDRESSES[config.facilitator.network].toLowerCase();
+        const expectedChainId = X402_NETWORKS[config.facilitator.network];
+
+        if (payment.paymentRequest.recipient.toLowerCase() !== expectedRecipient) {
+            res.status(402).json({
+                error: 'Payment recipient mismatch',
+                code: X402ErrorCode.PAYMENT_INVALID,
+                expected: config.facilitator.recipientAddress,
+            });
+            return;
+        }
+
+        if (payment.paymentRequest.token.toLowerCase() !== expectedToken) {
+            res.status(402).json({
+                error: 'Payment token mismatch - only USDC accepted',
+                code: X402ErrorCode.PAYMENT_INVALID,
+                expected: USDC_ADDRESSES[config.facilitator.network],
+            });
+            return;
+        }
+
+        if (payment.paymentRequest.chainId !== expectedChainId) {
+            res.status(402).json({
+                error: 'Payment chain mismatch',
+                code: X402ErrorCode.PAYMENT_INVALID,
+                expected: expectedChainId,
+            });
             return;
         }
 

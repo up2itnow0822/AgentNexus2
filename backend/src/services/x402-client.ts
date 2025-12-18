@@ -176,8 +176,8 @@ export class X402Client {
                 };
             }
 
-            // Create payment payload
-            const paymentPayload = this.createPaymentPayload(paymentRequest, paymentResult.transactionHash!);
+            // Create payment payload (async for signature generation)
+            const paymentPayload = await this.createPaymentPayload(paymentRequest, paymentResult.transactionHash!);
 
             // Retry request with payment
             const retryResponse = await fetch(url, {
@@ -277,18 +277,27 @@ export class X402Client {
     }
 
     /**
-     * Create signed payment payload
+     * Create signed payment payload with EIP-712 signature
+     * The signature proves the payer authorized this specific payment
      */
-    private createPaymentPayload(
+    private async createPaymentPayload(
         paymentRequest: X402PaymentRequest,
         transactionHash: string
-    ): X402PaymentPayload {
+    ): Promise<X402PaymentPayload> {
+        const timestamp = Math.floor(Date.now() / 1000);
+
+        // Create message to sign (hash of payment details for verification)
+        const message = `x402 Payment Proof\nTransaction: ${transactionHash}\nRecipient: ${paymentRequest.recipient}\nAmount: ${paymentRequest.amount}\nReference: ${paymentRequest.reference}\nTimestamp: ${timestamp}`;
+
+        // Sign the message using the account's private key
+        const signature = await this.account.signMessage({ message });
+
         return {
             paymentRequest,
             transactionHash,
-            signature: '', // Will be populated by facilitator verification
+            signature,
             payer: this.account.address,
-            timestamp: Math.floor(Date.now() / 1000),
+            timestamp,
         };
     }
 }
