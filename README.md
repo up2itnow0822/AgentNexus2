@@ -1,9 +1,5 @@
 # AgentNexus
 
-# [![CI Suite](https://github.com/up2itnow/AgentNexus2/actions/workflows/ci.yml/badge.svg)](https://github.com/up2itnow/AgentNexus2/actions/workflows/ci.yml)
-# [![CodeQL](https://github.com/up2itnow/AgentNexus2/actions/workflows/codeql.yml/badge.svg)](https://github.com/up2itnow/AgentNexus2/actions/workflows/codeql.yml)
-# [![Security Scan](https://github.com/up2itnow/AgentNexus2/actions/workflows/security-scan.yml/badge.svg)](https://github.com/up2itnow/AgentNexus2/actions/workflows/security-scan.yml)
-
 > [!IMPORTANT]
 > **🟢 Live on Base Mainnet (December 2025)**
 > 
