@@ -34,6 +34,7 @@ AgentNexus is **infrastructure software** intended for technically competent use
 **Deployment**: Live on Base Mainnet (December 2025)
 
 See [STATUS.md](./STATUS.md) for detailed project status and [DEPLOYMENTS.md](./DEPLOYMENTS.md) for contract addresses.
+For the grant brief, 3–6 month roadmap, and reviewer-friendly FAQ, see [docs/grant-brief.md](./docs/grant-brief.md).
 
 | Component | Status |
 |-----------|--------|

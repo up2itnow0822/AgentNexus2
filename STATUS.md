@@ -34,7 +34,7 @@ Breaking changes will be documented in release notes when possible, but backward
 
 ## Roadmap
 
-See [README.md](./README.md) for current status of components.
+See the 3–6 month roadmap in [docs/grant-brief.md](./docs/grant-brief.md) for upcoming features, funding needs, risks, and mitigations.
 
 ---
 
