@@ -54,7 +54,8 @@ curl -i http://localhost:3001/agents/demo/premium-analytics | tee /tmp/paywall.t
 jq -r '.paymentRequest.routes[] | select(.chain=="base") | .paymentRequest' /tmp/paywall.txt > /tmp/payment-request.json
 
 # Submit a previously recorded burn (from docs proof) to simulate end-to-end credit
-BURN_TX_HASH="0x<burn-tx-hash-from-proof-json>"
+# Auto-extract the burn hash from the canonical proof file
+BURN_TX_HASH=$(jq -r '.transactions.burn.hash' docs/proofs/cctp-ethmainnet-to-basemainnet.json)
 
 curl -X POST http://localhost:3001/api/payments/cctp/submit \
   -H "Content-Type: application/json" \

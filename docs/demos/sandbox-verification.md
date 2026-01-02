@@ -60,9 +60,12 @@ curl -i http://localhost:3001/agents/demo/premium-analytics | tee /tmp/resp.txt
 jq -r '.paymentRequest.routes[] | [.name,.chain,.amount] | @tsv' /tmp/resp.txt
 
 # Submit a recorded sandbox burn hash to simulate the relayer flow
+# Set your sandbox burn hash here (replace with actual value from your testnet run)
+BURN_TX_HASH="<YOUR_SANDBOX_BURN_HASH>"
+
 curl -X POST http://localhost:3001/api/payments/cctp/submit \
   -H "Content-Type: application/json" \
-  -d '{"burnTxHash":"<YOUR_SANDBOX_BURN_HASH>","referenceId":"sandbox-demo"}'
+  -d "{\"burnTxHash\":\"$BURN_TX_HASH\",\"referenceId\":\"sandbox-demo\"}"
 ```
 
 Relayer logs should show `receiveMessage` submission to Base Sepolia followed by `creditFromCctp` on the receiver contract.
