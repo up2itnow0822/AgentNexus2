@@ -1,16 +1,17 @@
 {
-  "buildCommand": "pnpm build",
+  "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "devCommand": "pnpm dev",
-  "installCommand": "pnpm install",
+  "devCommand": "npm run dev",
+  "installCommand": "pnpm install --no-frozen-lockfile",
   "framework": "nextjs",
   "regions": ["iad1"],
   "env": {
-    "NEXT_PUBLIC_API_URL": "@agentnexus-backend-url",
-    "NEXT_PUBLIC_ALCHEMY_API_KEY": "@alchemy-api-key",
-    "NEXT_PUBLIC_ALCHEMY_GAS_POLICY_ID": "@alchemy-gas-policy-id",
-    "NEXT_PUBLIC_CHAIN_ID": "1",
-    "NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID": "@walletconnect-project-id"
+    "NEXT_PUBLIC_API_URL": "https://agent-nexus-backend-production.up.railway.app",
+    "NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID": "afa5b906400511b7beaa2b9bd86c23c4",
+    "NEXT_PUBLIC_ALCHEMY_API_KEY": "sUzDSIQYiA_IR0woSLZHo",
+    "NEXT_PUBLIC_CHAIN_ID": "8453",
+    "NEXT_PUBLIC_ESCROW_CONTRACT": "0x37A7B1f10b87f31ad916Fb3518118f8AA0d8d2fC",
+    "NEXT_PUBLIC_ENTITLEMENTS_CONTRACT": "0x3c8f32F9cF41Dc255129d6Add447218053743b33"
   },
   "headers": [
     {
@@ -32,4 +33,3 @@
     }
   ]
 }
-
