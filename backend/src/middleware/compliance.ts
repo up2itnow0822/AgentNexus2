@@ -146,7 +146,7 @@ function logComplianceDecision(
 /**
  * Main compliance middleware
  */
-export function complianceMiddleware(req: Request, res: Response, next: NextFunction) {
+export function complianceMiddleware(req: Request, res: Response, next: NextFunction): void {
     const config = complianceConfig;
 
     // Extract context from request
@@ -162,7 +162,8 @@ export function complianceMiddleware(req: Request, res: Response, next: NextFunc
     const countryResult = checkCountry(context.country, config);
     if (!countryResult.allowed) {
         logComplianceDecision(context, countryResult, 'GEOFENCE');
-        return res.status(451).json({
+        res.status(451).json({
+        return;
             success: false,
             error: {
                 code: countryResult.code,
@@ -175,7 +176,8 @@ export function complianceMiddleware(req: Request, res: Response, next: NextFunc
     const categoryResult = checkAgentCategory(context.agentCategory, context.country, config);
     if (!categoryResult.allowed) {
         logComplianceDecision(context, categoryResult, 'CATEGORY');
-        return res.status(403).json({
+        res.status(403).json({
+        return;
             success: false,
             error: {
                 code: categoryResult.code,
@@ -188,7 +190,8 @@ export function complianceMiddleware(req: Request, res: Response, next: NextFunc
     const kycResult = checkKyc(context.kycVerified, context.agentCategory, config);
     if (!kycResult.allowed) {
         logComplianceDecision(context, kycResult, 'KYC');
-        return res.status(403).json({
+        res.status(403).json({
+        return;
             success: false,
             error: {
                 code: kycResult.code,
