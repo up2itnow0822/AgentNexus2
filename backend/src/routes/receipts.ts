@@ -7,10 +7,11 @@
  */
 
 import { Router, Request, Response } from 'express';
+import type { Router as RouterType } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { ReceiptService } from '../services/ReceiptService';
 
-const router = Router();
+const router: RouterType = Router();
 const prisma = new PrismaClient();
 const receiptService = new ReceiptService(prisma);
 
@@ -61,7 +62,7 @@ router.get('/:executionId/summary', async (req: Request, res: Response) => {
 
         const summary = await receiptService.getReceiptSummary(executionId);
 
-        res.json({
+        return res.json({
             success: true,
             data: summary
         });

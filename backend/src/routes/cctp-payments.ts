@@ -6,9 +6,10 @@
  */
 
 import { Router, Request, Response } from 'express';
+import type { Router as RouterType } from 'express';
 import { CctpRelayerService } from '../services/CctpRelayerService';
 
-const router = Router();
+const router: RouterType = Router();
 const relayerService = new CctpRelayerService();
 
 /**
