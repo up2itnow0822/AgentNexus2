@@ -17,9 +17,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-          cache: 'npm'
-          cache-dependency-path: 'backend/package-lock.json'
-      - run: npm ci
+      - run: npm install
       - run: npm test --if-present
 
   unit-tests-frontend:
@@ -59,11 +57,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Build backend image
-        if: exists('backend/Dockerfile')
-        run: docker build -t agentnexus/backend:ci ./backend
+        run: |
+          if [ -f backend/Dockerfile ]; then docker build -t agentnexus/backend:ci ./backend; else echo "No backend Dockerfile"; fi
       - name: Build frontend image
-        if: exists('frontend/Dockerfile')
-        run: docker build -t agentnexus/frontend:ci ./frontend
+        run: |
+          if [ -f frontend/Dockerfile ]; then docker build -t agentnexus/frontend:ci ./frontend; else echo "No frontend Dockerfile"; fi
 
   smoke-backend:
     needs: [unit-tests-backend]
@@ -76,7 +74,7 @@ jobs:
       - name: Install & start backend (dev)
         working-directory: backend
         run: |
-          npm ci || true
+          npm install || true
           npm run build --if-present || true
           npm start --if-present &
           npx wait-on http://localhost:3000 || true
