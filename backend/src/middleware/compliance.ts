@@ -162,8 +162,7 @@ export function complianceMiddleware(req: Request, res: Response, next: NextFunc
     const countryResult = checkCountry(context.country, config);
     if (!countryResult.allowed) {
         logComplianceDecision(context, countryResult, 'GEOFENCE');
-        res.status(451).json({
-        return;
+        return res.status(451).json({
             success: false,
             error: {
                 code: countryResult.code,
@@ -176,8 +175,7 @@ export function complianceMiddleware(req: Request, res: Response, next: NextFunc
     const categoryResult = checkAgentCategory(context.agentCategory, context.country, config);
     if (!categoryResult.allowed) {
         logComplianceDecision(context, categoryResult, 'CATEGORY');
-        res.status(403).json({
-        return;
+        return res.status(403).json({
             success: false,
             error: {
                 code: categoryResult.code,
@@ -190,8 +188,7 @@ export function complianceMiddleware(req: Request, res: Response, next: NextFunc
     const kycResult = checkKyc(context.kycVerified, context.agentCategory, config);
     if (!kycResult.allowed) {
         logComplianceDecision(context, kycResult, 'KYC');
-        res.status(403).json({
-        return;
+        return res.status(403).json({
             success: false,
             error: {
                 code: kycResult.code,
