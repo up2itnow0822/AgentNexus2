@@ -3,13 +3,18 @@ AgentNexus Paper Trader Agent
 Sprint 3 Reference Agent - Trading with A2A
 
 Features:
-- Paper trading mode (simulated trades)
-- Live trading mode toggle (network required)
+- Paper trading mode (simulated trades with deterministic prices for demos)
+- Live trading mode (real prices via CoinGecko by default, configurable)
 - A2A capability: Calls Summarizer agent for market analysis
-- Deterministic paper mode for demos
 
 GRANT LANGUAGE:
 "Demonstrates Agent-to-Agent (A2A) composability."
+
+Price Feed Configuration (live mode):
+  PRICE_FEED_PROVIDER  — coingecko (default, free), binance, coinmarketcap, custom
+  CMC_API_KEY          — required when PRICE_FEED_PROVIDER=coinmarketcap
+  PRICE_FEED_URL       — required when PRICE_FEED_PROVIDER=custom
+                         Use {symbol} placeholder, e.g. https://api.example.com/price?symbol={symbol}
 """
 
 import json
@@ -19,39 +24,46 @@ import hashlib
 from datetime import datetime
 from typing import Any, Optional
 
+from price_feed import get_price, get_prices
+
 
 class PaperTrader:
     """
-    Simple paper trading agent with price simulation.
+    Trading agent with paper mode (deterministic simulation) and
+    live mode (real prices from CoinGecko or user-configured provider).
     """
-    
+
     def __init__(self, mode: str = 'paper'):
         self.mode = mode  # 'paper' or 'live'
         self.portfolio = {'USDC': 10000.0}  # Starting balance
         self.trades = []
-        
-    def get_price(self, symbol: str) -> float:
+
+    def get_current_price(self, symbol: str) -> float:
         """
         Get price for symbol.
-        Paper mode: Uses deterministic simulation
-        Live mode: Would call external API
+        Paper mode: deterministic simulation based on symbol hash (stable for demos)
+        Live mode: real-time price from configured price feed (default: CoinGecko, free)
         """
         if self.mode == 'paper':
-            # Deterministic price based on symbol hash
+            # Deterministic price based on symbol hash — stable for demos/tests
             seed = int(hashlib.md5(symbol.encode()).hexdigest()[:8], 16)
             base_price = (seed % 10000) / 100  # $0.01 - $99.99
             return max(0.01, base_price)
         else:
-            # Live mode would call external API
-            # Not implemented for safety
-            raise NotImplementedError("Live trading not enabled in this demo")
-    
+            # Live mode: fetch real price from configured provider
+            return get_price(symbol)
+
+    # Keep old method name for backward compatibility
+    def get_price(self, symbol: str) -> float:
+        return self.get_current_price(symbol)
+
     def execute_trade(self, action: str, symbol: str, amount: float) -> dict:
         """
         Execute a trade (paper or live).
+        Both modes use get_current_price() — live mode gets real prices.
         """
-        price = self.get_price(symbol)
-        
+        price = self.get_current_price(symbol)
+
         trade = {
             'timestamp': datetime.utcnow().isoformat(),
             'action': action,
@@ -61,7 +73,7 @@ class PaperTrader:
             'value': amount * price,
             'mode': self.mode
         }
-        
+
         if action == 'BUY':
             cost = amount * price
             if self.portfolio.get('USDC', 0) >= cost:
@@ -82,7 +94,7 @@ class PaperTrader:
         else:
             trade['status'] = 'INVALID'
             trade['reason'] = f'Unknown action: {action}'
-        
+
         self.trades.append(trade)
         return trade
 
@@ -90,7 +102,7 @@ class PaperTrader:
 def call_summarizer_agent(text: str) -> Optional[dict]:
     """
     A2A: Call the Summarizer agent for market analysis.
-    
+
     In production, this would make an HTTP call to the agent execution API.
     For demo, we simulate the summarizer output.
     """
@@ -107,7 +119,7 @@ def call_summarizer_agent(text: str) -> Optional[dict]:
 def run(input_data: dict) -> dict[str, Any]:
     """
     Main trading agent logic.
-    
+
     Input:
     {
         "action": "BUY" | "SELL" | "ANALYZE",
@@ -121,39 +133,39 @@ def run(input_data: dict) -> dict[str, Any]:
             "error": "Invalid input: expected object with action, symbol, amount",
             "confidence": 0.0
         }
-    
+
     action = input_data.get('action', '').upper()
     symbol = input_data.get('symbol', 'ETH').upper()
     amount = float(input_data.get('amount', 1.0))
     mode = input_data.get('mode', os.environ.get('TRADING_MODE', 'paper'))
-    
+
     trader = PaperTrader(mode=mode)
-    
+
     if action == 'ANALYZE':
         # A2A: Call summarizer for analysis
         market_text = f"Market analysis for {symbol}: Current conditions suggest moderate volatility with potential upside momentum based on recent trading patterns."
         analysis = call_summarizer_agent(market_text)
-        
+
         return {
             "action": "ANALYZE",
             "symbol": symbol,
             "analysis": analysis,
-            "price": trader.get_price(symbol),
+            "price": trader.get_current_price(symbol),
             "mode": mode,
             "a2a_enabled": True,
             "confidence": 0.9
         }
-    
+
     elif action in ['BUY', 'SELL']:
         trade = trader.execute_trade(action, symbol, amount)
-        
+
         return {
             "trade": trade,
             "portfolio": trader.portfolio,
             "mode": mode,
             "confidence": 0.95 if trade['status'] == 'FILLED' else 0.3
         }
-    
+
     else:
         return {
             "error": f"Unknown action: {action}. Use BUY, SELL, or ANALYZE.",
@@ -171,7 +183,7 @@ def main():
         "symbol": "ETH",
         "mode": "paper"
     }
-    
+
     try:
         if sys.stdin.isatty():
             print("[Demo mode - using sample ANALYZE input]", file=sys.stderr)
@@ -187,10 +199,10 @@ def main():
             else:
                 print("[Demo mode - empty stdin, using sample]", file=sys.stderr)
                 input_data = demo_input
-        
+
         result = run(input_data)
         print(json.dumps(result, indent=2))
-        
+
     except Exception as e:
         print(json.dumps({
             "error": f"Execution failed: {str(e)}",
