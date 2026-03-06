@@ -165,3 +165,25 @@ We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for gu
 ## License
 
 Apache 2.0 - See [LICENSE](./LICENSE) for details. Third-party protocol and dependency notices are documented in [NOTICE](./NOTICE).
+
+---
+
+## Protocol Compatibility
+
+AgentNexus is natively compatible with the emerging agent payments and inter-agent communication protocol stack:
+
+| Protocol | Status | Description |
+|----------|--------|-------------|
+| **x402** (HTTP 402 Payment Protocol) | ✅ Native | Pay-per-request USDC payments over HTTP — the internet-native payment rail for AI agents |
+| **AP2** (Agent Payments Protocol) | ✅ Compatible | Aligned with Google/Coinbase/Ethereum Foundation's Agent Payments Protocol — our x402 implementation is AP2-ready |
+| **MCP** (Model Context Protocol) | ✅ Compatible | Agents can invoke payment actions via MCP tool calls — drop-in integration with Claude, Cursor, and any MCP-enabled AI runtime |
+| **A2A** (Agent-to-Agent) | ✅ Supported | Full agent-to-agent payment flows — agents can pay each other autonomously without human intervention |
+| **CCTP** (Circle Cross-Chain Transfer Protocol) | ✅ Integrated | Native Circle CCTP v2 support — bridge USDC from Arbitrum, Optimism, and Ethereum to Base in a single atomic flow |
+
+### Why This Matters
+
+In February 2026, Google announced a partnership with Coinbase and the Ethereum Foundation to extend the Agent Payments Protocol (AP2) with x402 as the HTTP-native payment layer. This makes our existing x402 implementation **institutionally validated** infrastructure — not experimental.
+
+AgentNexus was built on these primitives from day one. We are one of the earliest production deployments of the full AP2/x402/CCTP/A2A payment stack on Base Mainnet.
+
+> **agent-wallet-sdk** — the TypeScript SDK powering AgentNexus payments — is available on npm as [`elizaos-plugin-agentwallet`](https://www.npmjs.com/package/elizaos-plugin-agentwallet) for direct integration into any ElizaOS agent.
