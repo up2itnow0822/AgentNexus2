@@ -75,7 +75,7 @@ jobs:
           npm install --legacy-peer-deps || true
           npm run build --if-present || true
           npm start --if-present &
-          npx wait-on http://localhost:3000 || true
+          npx wait-on -t 30000 http://localhost:3000 || true
       - name: Ping health
         run: |
           curl -fsS http://localhost:3000/health || echo "Health endpoint not available"
