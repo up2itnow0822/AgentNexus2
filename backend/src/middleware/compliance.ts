@@ -162,39 +162,42 @@ export function complianceMiddleware(req: Request, res: Response, next: NextFunc
     const countryResult = checkCountry(context.country, config);
     if (!countryResult.allowed) {
         logComplianceDecision(context, countryResult, 'GEOFENCE');
-        return res.status(451).json({
+        res.status(451).json({
             success: false,
             error: {
                 code: countryResult.code,
                 message: countryResult.reason
             }
         });
+        return;
     }
 
     // 2. Check agent category restrictions
     const categoryResult = checkAgentCategory(context.agentCategory, context.country, config);
     if (!categoryResult.allowed) {
         logComplianceDecision(context, categoryResult, 'CATEGORY');
-        return res.status(403).json({
+        res.status(403).json({
             success: false,
             error: {
                 code: categoryResult.code,
                 message: categoryResult.reason
             }
         });
+        return;
     }
 
     // 3. Check KYC requirements
     const kycResult = checkKyc(context.kycVerified, context.agentCategory, config);
     if (!kycResult.allowed) {
         logComplianceDecision(context, kycResult, 'KYC');
-        return res.status(403).json({
+        res.status(403).json({
             success: false,
             error: {
                 code: kycResult.code,
                 message: kycResult.reason
             }
         });
+        return;
     }
 
     // All checks passed

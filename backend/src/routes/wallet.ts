@@ -26,7 +26,8 @@ const validateWalletCreation = [
 ];
 
 // Helper to get chain object
-const getChain = (chainId: number) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getChain = (chainId: number): any => {
   switch (chainId) {
     case 8453: return base;
     case 84532: return baseSepolia;
