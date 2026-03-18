@@ -80,7 +80,7 @@ For the grant brief, 3–6 month roadmap, and reviewer-friendly FAQ, see [docs/g
 
 1.  **Clone the repository**
     ```bash
-    git clone https://github.com/up2itnow/AgentNexus2.git
+    git clone https://github.com/up2itnow0822/AgentNexus2.git
     cd AgentNexus2
     ```
 
