@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@alchemy/aa-accounts": "^3.0.0",
-    "@alchemy/aa-alchemy": "^0.2.0",
+    "@alchemy/aa-alchemy": "^3.19.0",
     "@alchemy/aa-core": "3.6.1",
     "@coinbase/x402": "^2.0.0",
     "@elizaos/core": "^1.6.4",

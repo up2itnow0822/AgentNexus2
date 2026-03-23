@@ -100,7 +100,7 @@ const verifyPayment = async (
             return { valid: false, error: `Facilitator error: ${error}` };
         }
 
-        const result = await response.json();
+        const result = await response.json() as { valid?: boolean; error?: string };
 
         return {
             valid: result.valid === true,
