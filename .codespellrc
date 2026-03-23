@@ -1,0 +1,9 @@
+[codespell]
+skip = node_modules,.git,dist,package-lock.json,pnpm-lock.yaml
+# Ignore code identifiers that codespell misidentifies as typos:
+# - transferrable: intentional Solidity public variable name (matches deployed contract ABI)
+# - datas: Solidity parameter name in multi-call interface
+# - afterAll: Jest lifecycle hook
+# - amountIn: DeFi/swap standard identifier
+# - notIn: Prisma query operator
+ignore-words-list = transferrable,datas,afterall,amountin,notin
