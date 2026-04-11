@@ -10,6 +10,7 @@
 
 'use client';
 
+import { useEffect, useState } from 'react';
 import { WagmiProvider } from 'wagmi';
 import { RainbowKitProvider, darkTheme, lightTheme } from '@rainbow-me/rainbowkit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -30,14 +31,24 @@ const queryClient = new QueryClient({
 });
 
 export function Web3Provider({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProviderWithTheme>
-          <SolanaWalletProvider>
-            {children}
-          </SolanaWalletProvider>
-        </RainbowKitProviderWithTheme>
+        <SolanaWalletProvider>
+          {mounted ? (
+            <RainbowKitProviderWithTheme>
+              {children}
+            </RainbowKitProviderWithTheme>
+          ) : (
+            <>{children}</>
+          )}
+        </SolanaWalletProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );

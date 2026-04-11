@@ -3,8 +3,11 @@
 
 FROM node:20-alpine AS base
 
+# Install build tooling needed by native dependencies during pnpm install
+RUN apk add --no-cache python3 make g++ linux-headers libusb-dev eudev-dev
+
 # Install pnpm
-RUN npm install -g pnpm@8
+RUN npm install -g pnpm@9.15.9
 
 # Set working directory
 WORKDIR /app

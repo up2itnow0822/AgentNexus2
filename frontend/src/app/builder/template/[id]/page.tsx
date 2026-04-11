@@ -7,22 +7,18 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Eye, Loader2, Rocket } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useTemplate, useGenerateAgent, usePreviewAgent } from '@/hooks/useBuilder';
 import type { BuildMethod } from '@/types/builder';
 
-interface PageProps {
-  params: {
-    id: string;
-  };
-}
-
-export default function TemplateConfigPage({ params }: PageProps) {
+export default function TemplateConfigPage() {
   const router = useRouter();
-  const { template, isLoading: loadingTemplate, isError } = useTemplate(params.id);
+  const params = useParams<{ id: string }>();
+  const templateId = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const { template, isLoading: loadingTemplate, isError } = useTemplate(templateId || '');
   const { generateAgent, isGenerating } = useGenerateAgent();
   const { previewAgent, isPreviewing } = usePreviewAgent();
 
