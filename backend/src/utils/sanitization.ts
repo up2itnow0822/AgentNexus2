@@ -126,9 +126,9 @@ function sanitizeString(str: string): string {
  * 
  * @example
  * ```typescript
- * const log = "API_KEY=sk_live_abc123def456";
+ * const log = "EXAMPLE_API_KEY=test-token-12345";
  * const sanitized = sanitizeLogs(log);
- * // Result: "API_KEY=***REDACTED***"
+ * // Result: "EXAMPLE_API_KEY=***REDACTED***"
  * ```
  */
 export function sanitizeLogs(logText: string): string {

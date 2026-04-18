@@ -1,7 +1,7 @@
 # AgentNexus Shell Script Agent Template
 # Minimal container for simple shell-based agents
 
-FROM alpine:3.19
+FROM alpine:3.22
 
 # Install jq for JSON processing
 RUN apk add --no-cache jq bash
