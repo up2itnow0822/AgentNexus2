@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Save, Settings } from 'lucide-react';
 
 interface SettingsModalProps {
@@ -8,20 +8,24 @@ interface SettingsModalProps {
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [backendUrl, setBackendUrl] = useState('');
-  const [apiKey, setApiKey] = useState('');
   const [saved, setSaved] = useState(false);
+  const apiKeyInputRef = useRef<HTMLInputElement>(null);
+
+  const readBackendUrl = () => localStorage.getItem('backend_base_url') || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8200';
+  const persistBackendUrl = (url: string) => localStorage.setItem('backend_base_url', url);
 
   useEffect(() => {
     if (isOpen) {
-      const storedUrl = localStorage.getItem('backend_base_url') || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8200';
-      setBackendUrl(storedUrl);
-      setApiKey('');
+      setBackendUrl(readBackendUrl());
+      if (apiKeyInputRef.current) {
+        apiKeyInputRef.current.value = '';
+      }
       setSaved(false);
     }
   }, [isOpen]);
 
   const handleSave = () => {
-    localStorage.setItem('backend_base_url', backendUrl);
+    persistBackendUrl(backendUrl);
 
     setSaved(true);
     setTimeout(() => {
@@ -73,9 +77,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </label>
             <input
               id="apiKey"
+              ref={apiKeyInputRef}
               type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
               placeholder="Enter your API key"
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />

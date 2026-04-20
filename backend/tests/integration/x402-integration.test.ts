@@ -6,6 +6,7 @@
 
 import request from 'supertest';
 import express, { Express } from 'express';
+import rateLimit from 'express-rate-limit';
 import { x402Paywall, x402Enabled, getX402Config } from '../../src/middleware/x402';
 import {
     X402PaymentRequest,
@@ -19,6 +20,12 @@ describe('x402 Integration Tests', () => {
     beforeEach(() => {
         app = express();
         app.use(express.json());
+        app.use(rateLimit({
+            windowMs: 60 * 1000,
+            max: 100,
+            standardHeaders: true,
+            legacyHeaders: false,
+        }));
 
         // Reset environment
         delete process.env.ENABLE_X402;

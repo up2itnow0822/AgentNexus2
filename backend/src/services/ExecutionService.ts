@@ -715,9 +715,9 @@ export class ExecutionService {
       await container.stop();
       await container.remove({ force: true });
       this.activeContainers.delete(executionId);
-      console.log(`Stopped container ${containerId} for execution ${executionId}`);
+      console.log('Stopped execution container during cleanup');
     } catch (error) {
-      console.warn("Failed to stop container for execution", { executionId, error });
+      console.warn('Failed to stop execution container during cleanup');
     }
   }
 

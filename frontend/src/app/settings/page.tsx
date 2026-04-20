@@ -1,21 +1,26 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
 
 export default function SettingsPage() {
     const { theme, setTheme } = useTheme();
-    const [apiKey, setApiKey] = useState('');
     const [backendUrl, setBackendUrl] = useState('');
+    const apiKeyInputRef = useRef<HTMLInputElement>(null);
+
+    const readBackendUrl = () => localStorage.getItem('agentnexus_backend_url') || '';
+    const persistBackendUrl = (url: string) => localStorage.setItem('agentnexus_backend_url', url);
 
     useEffect(() => {
-        const storedEndpoint = localStorage.getItem('agentnexus_backend_url');
+        const storedEndpoint = readBackendUrl();
         if (storedEndpoint) setBackendUrl(storedEndpoint);
-        setApiKey('');
+        if (apiKeyInputRef.current) {
+            apiKeyInputRef.current.value = '';
+        }
     }, []);
 
     const handleSave = () => {
-        localStorage.setItem('agentnexus_backend_url', backendUrl);
+        persistBackendUrl(backendUrl);
         alert('Settings saved. API keys are kept in memory only.');
     };
 
@@ -40,9 +45,8 @@ export default function SettingsPage() {
                         <div>
                             <label className="block text-sm font-medium mb-1">API Key</label>
                             <input
+                                ref={apiKeyInputRef}
                                 type="password"
-                                value={apiKey}
-                                onChange={(e) => setApiKey(e.target.value)}
                                 placeholder="sk-..."
                                 className="w-full p-2 border rounded bg-background"
                             />
