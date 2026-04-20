@@ -45,24 +45,24 @@ jobs:
             echo "No frontend Dockerfile found"
             echo "built=false" >> $GITHUB_OUTPUT
           fi
-    - name: Trivy backend summary
-      if: steps.build-backend.outputs.built == 'true'
-      uses: aquasecurity/trivy-action@0.35.0
-      with:
-        image-ref: 'agentnexus/backend:scan'
-        format: 'table'
-        severity: 'CRITICAL,HIGH'
-        ignore-unfixed: true
-        exit-code: '0'
-    - name: Trivy frontend summary
-      if: steps.build-frontend.outputs.built == 'true'
-      uses: aquasecurity/trivy-action@0.35.0
-      with:
-        image-ref: 'agentnexus/frontend:scan'
-        format: 'table'
-        severity: 'CRITICAL,HIGH'
-        ignore-unfixed: true
-        exit-code: '0'
+      - name: Trivy backend summary
+        if: steps.build-backend.outputs.built == 'true'
+        uses: aquasecurity/trivy-action@0.35.0
+        with:
+          image-ref: 'agentnexus/backend:scan'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          exit-code: '0'
+      - name: Trivy frontend summary
+        if: steps.build-frontend.outputs.built == 'true'
+        uses: aquasecurity/trivy-action@0.35.0
+        with:
+          image-ref: 'agentnexus/frontend:scan'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          exit-code: '0'
       - name: Hadolint backend
         if: steps.build-backend.outputs.built == 'true'
         uses: hadolint/hadolint-action@v3.1.0

@@ -139,7 +139,7 @@ export class ExecutionService {
 
     // 4. Security: Sanitize input
     const sanitizedInput = sanitizeInput(dto.inputData);
-    console.log(`🔒 Input sanitized: ${createSafeSummary(sanitizedInput)}`);
+    console.log('🔒 Input sanitized:', createSafeSummary(sanitizedInput));
 
     // 5. Validate input data against agent's schema
     this.validateInput(agent, sanitizedInput);
@@ -783,4 +783,3 @@ export class ExecutionService {
     };
   }
 }
-

@@ -7,21 +7,21 @@ interface SettingsModalProps {
 }
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-  const [apiUrl, setApiUrl] = useState('');
+  const [backendUrl, setBackendUrl] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      const storedUrl = localStorage.getItem('api_url') || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8200';
-      setApiUrl(storedUrl);
+      const storedUrl = localStorage.getItem('backend_base_url') || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8200';
+      setBackendUrl(storedUrl);
       setApiKey('');
       setSaved(false);
     }
   }, [isOpen]);
 
   const handleSave = () => {
-    localStorage.setItem('api_url', apiUrl);
+    localStorage.setItem('backend_base_url', backendUrl);
 
     setSaved(true);
     setTimeout(() => {
@@ -57,8 +57,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             <input
               id="apiUrl"
               type="text"
-              value={apiUrl}
-              onChange={(e) => setApiUrl(e.target.value)}
+              value={backendUrl}
+              onChange={(e) => setBackendUrl(e.target.value)}
               placeholder="http://localhost:8200"
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />

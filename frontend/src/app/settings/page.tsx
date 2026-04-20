@@ -6,16 +6,16 @@ import { useTheme } from 'next-themes';
 export default function SettingsPage() {
     const { theme, setTheme } = useTheme();
     const [apiKey, setApiKey] = useState('');
-    const [apiEndpoint, setApiEndpoint] = useState('');
+    const [backendUrl, setBackendUrl] = useState('');
 
     useEffect(() => {
-        const storedEndpoint = localStorage.getItem('agentnexus_api_endpoint');
-        if (storedEndpoint) setApiEndpoint(storedEndpoint);
+        const storedEndpoint = localStorage.getItem('agentnexus_backend_url');
+        if (storedEndpoint) setBackendUrl(storedEndpoint);
         setApiKey('');
     }, []);
 
     const handleSave = () => {
-        localStorage.setItem('agentnexus_api_endpoint', apiEndpoint);
+        localStorage.setItem('agentnexus_backend_url', backendUrl);
         alert('Settings saved. API keys are kept in memory only.');
     };
 
@@ -31,8 +31,8 @@ export default function SettingsPage() {
                             <label className="block text-sm font-medium mb-1">API Endpoint</label>
                             <input
                                 type="text"
-                                value={apiEndpoint}
-                                onChange={(e) => setApiEndpoint(e.target.value)}
+                                value={backendUrl}
+                                onChange={(e) => setBackendUrl(e.target.value)}
                                 placeholder="https://api.agentnexus.xyz"
                                 className="w-full p-2 border rounded bg-background"
                             />
