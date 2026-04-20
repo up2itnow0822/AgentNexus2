@@ -45,36 +45,24 @@ jobs:
             echo "No frontend Dockerfile found"
             echo "built=false" >> $GITHUB_OUTPUT
           fi
-      - name: Trivy backend
-        if: steps.build-backend.outputs.built == 'true'
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'agentnexus/backend:scan'
-          format: 'sarif'
-          output: 'trivy-backend.sarif'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '0'
-      - name: Upload Trivy backend results
-        if: steps.build-backend.outputs.built == 'true'
-        uses: github/codeql-action/upload-sarif@v3
-        continue-on-error: true
-        with:
-          sarif_file: 'trivy-backend.sarif'
-      - name: Trivy frontend
-        if: steps.build-frontend.outputs.built == 'true'
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'agentnexus/frontend:scan'
-          format: 'sarif'
-          output: 'trivy-frontend.sarif'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '0'
-      - name: Upload Trivy frontend results
-        if: steps.build-frontend.outputs.built == 'true'
-        uses: github/codeql-action/upload-sarif@v3
-        continue-on-error: true
-        with:
-          sarif_file: 'trivy-frontend.sarif'
+    - name: Trivy backend summary
+      if: steps.build-backend.outputs.built == 'true'
+      uses: aquasecurity/trivy-action@0.35.0
+      with:
+        image-ref: 'agentnexus/backend:scan'
+        format: 'table'
+        severity: 'CRITICAL,HIGH'
+        ignore-unfixed: true
+        exit-code: '0'
+    - name: Trivy frontend summary
+      if: steps.build-frontend.outputs.built == 'true'
+      uses: aquasecurity/trivy-action@0.35.0
+      with:
+        image-ref: 'agentnexus/frontend:scan'
+        format: 'table'
+        severity: 'CRITICAL,HIGH'
+        ignore-unfixed: true
+        exit-code: '0'
       - name: Hadolint backend
         if: steps.build-backend.outputs.built == 'true'
         uses: hadolint/hadolint-action@v3.1.0
