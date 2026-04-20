@@ -717,7 +717,7 @@ export class ExecutionService {
       this.activeContainers.delete(executionId);
       console.log(`Stopped container ${containerId} for execution ${executionId}`);
     } catch (error) {
-      console.warn(`Failed to stop container for execution ${executionId}:`, error);
+      console.warn("Failed to stop container for execution", { executionId, error });
     }
   }
 

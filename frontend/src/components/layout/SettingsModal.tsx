@@ -14,21 +14,15 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   useEffect(() => {
     if (isOpen) {
       const storedUrl = localStorage.getItem('api_url') || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8200';
-      const storedKey = localStorage.getItem('auth_token') || '';
       setApiUrl(storedUrl);
-      setApiKey(storedKey);
+      setApiKey('');
       setSaved(false);
     }
   }, [isOpen]);
 
   const handleSave = () => {
     localStorage.setItem('api_url', apiUrl);
-    if (apiKey) {
-      localStorage.setItem('auth_token', apiKey);
-    } else {
-      localStorage.removeItem('auth_token');
-    }
-    
+
     setSaved(true);
     setTimeout(() => {
       setSaved(false);
@@ -86,7 +80,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
             <p className="text-xs text-muted-foreground">
-              Your authentication token for accessing protected endpoints.
+              Your authentication token is kept only for this session and is not saved in browser storage.
             </p>
           </div>
         </div>

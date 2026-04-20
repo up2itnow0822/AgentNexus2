@@ -9,16 +9,14 @@ export default function SettingsPage() {
     const [apiEndpoint, setApiEndpoint] = useState('');
 
     useEffect(() => {
-        const storedKey = localStorage.getItem('agentnexus_api_key');
         const storedEndpoint = localStorage.getItem('agentnexus_api_endpoint');
-        if (storedKey) setApiKey(storedKey);
         if (storedEndpoint) setApiEndpoint(storedEndpoint);
+        setApiKey('');
     }, []);
 
     const handleSave = () => {
-        localStorage.setItem('agentnexus_api_key', apiKey);
         localStorage.setItem('agentnexus_api_endpoint', apiEndpoint);
-        alert('Settings saved!');
+        alert('Settings saved. API keys are kept in memory only.');
     };
 
     return (
@@ -48,6 +46,9 @@ export default function SettingsPage() {
                                 placeholder="sk-..."
                                 className="w-full p-2 border rounded bg-background"
                             />
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                API keys are not stored in browser localStorage. Re-enter them after a full page reload.
+                            </p>
                         </div>
                     </div>
                 </div>
