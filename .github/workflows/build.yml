@@ -1,0 +1,45 @@
+name: build
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        if: hashFiles('package.json') != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install verify (soft gate)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f package.json ]; then
+            if [ -f pnpm-lock.yaml ]; then
+              corepack enable
+              pnpm install --frozen-lockfile || pnpm install
+            elif [ -f yarn.lock ]; then
+              corepack enable
+              yarn install --frozen-lockfile || yarn install
+            else
+              if [ -f package-lock.json ]; then npm ci || npm install; else npm install; fi
+            fi
+            echo "Install succeeded — soft build gate"
+            exit 0
+          fi
+          echo "No package.json — soft build gate"
