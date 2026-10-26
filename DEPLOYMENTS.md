@@ -26,4 +26,4 @@ This document serves as the canonical source of truth for all AgentNexus smart c
 
 ## 🔒 Release Tags
 
-- [v0.1.1-base-mainnet](https://github.com/up2itnow/AgentNexus2/releases/tag/v0.1.1-base-mainnet) - First public mainnet release
+- [v0.1.1-base-mainnet](https://github.com/up2itnow0822/AgentNexus2/releases/tag/v0.1.1-base-mainnet) - First public mainnet release

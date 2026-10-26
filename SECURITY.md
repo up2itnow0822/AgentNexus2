@@ -5,7 +5,7 @@
 **DO NOT** open a public GitHub issue for security vulnerabilities.
 
 **Report via GitHub Security Advisories**:
-https://github.com/up2itnow/AgentNexus2/security/advisories/new
+https://github.com/up2itnow0822/AgentNexus2/security/advisories/new
 
 **Response Time**: 24 hours
 
@@ -436,7 +436,7 @@ Total Test Suites:  All passing ✅
 
 ### Reporting
 
-**Report via:** [GitHub Security Advisories](https://github.com/up2itnow/AgentNexus2/security/advisories/new)  
+**Report via:** [GitHub Security Advisories](https://github.com/up2itnow0822/AgentNexus2/security/advisories/new)  
 **Response Time:** 24 hours  
 **Severity Levels:** Critical, High, Medium, Low
 
@@ -491,7 +491,7 @@ Total Test Suites:  All passing ✅
 
 ## 📞 Contact
 
-**Security Reports:** [GitHub Security Advisories](https://github.com/up2itnow/AgentNexus2/security/advisories/new)  
+**Security Reports:** [GitHub Security Advisories](https://github.com/up2itnow0822/AgentNexus2/security/advisories/new)  
 **Bug Bounty:** Coming soon  
 **Documentation:** This file + `agent-runtime/security/README.md`
 
