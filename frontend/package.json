@@ -76,5 +76,11 @@
   },
   "overrides": {
     "viem": "2.21.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "node-forge": "^1.4.1",
+      "joi": "^17.13.9"
+    }
   }
 }

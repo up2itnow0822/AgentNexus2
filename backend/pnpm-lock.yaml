@@ -12,6 +12,8 @@ overrides:
   serialize-javascript: 7.0.5
   undici: 6.24.0
   ws: 8.18.3
+  node-forge: ^1.4.1
+  joi: ^17.13.9
 
 importers:
 

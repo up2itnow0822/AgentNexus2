@@ -4,6 +4,10 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  node-forge: ^1.4.1
+  joi: ^17.13.9
+
 importers:
 
   .:

@@ -6,6 +6,8 @@ settings:
 
 overrides:
   undici@>=6.0.0 <6.29.1: 6.29.1
+  node-forge: ^1.4.1
+  joi: ^17.13.9
 
 importers:
 
