@@ -30,6 +30,12 @@ jest.mock('../src/services/MetricsService', () => ({
         recordRevenue: jest.fn()
     }
 }));
+jest.mock('../src/services/eliza/ElizaAgentService', () => ({
+    ElizaAgentService: jest.fn().mockImplementation(() => ({
+        startAgent: jest.fn(),
+        execute: jest.fn()
+    }))
+}));
 
 describe('ExecutionService Unit Tests', () => {
     let executionService: ExecutionService;
@@ -147,6 +153,31 @@ describe('ExecutionService Unit Tests', () => {
                 purchaseId: 'purch-1',
                 inputData: { query: 'test' }
             })).rejects.toThrow('No valid entitlement');
+        });
+
+        it('should require an active entitlement that is unexpired or never expires', async () => {
+            (prisma.entitlement.findFirst as jest.Mock).mockResolvedValue(null);
+
+            await expect(executionService.executeAgent(mockUser.id, {
+                agentId: mockAgent.id,
+                purchaseId: 'purch-1',
+                inputData: { query: 'test' }
+            })).rejects.toThrow('No valid entitlement');
+
+            // Schema default is expires_at NULL (never expires) and is_active true.
+            // `{ expiresAt: { gt: now } }` is unknown for NULL in SQL, so permanent
+            // entitlements were denied. Omitting isActive let revoked rows through.
+            expect(prisma.entitlement.findFirst).toHaveBeenCalledWith({
+                where: {
+                    userId: mockUser.id,
+                    agentId: mockAgent.id,
+                    isActive: true,
+                    OR: [
+                        { expiresAt: null },
+                        { expiresAt: { gt: expect.any(Date) } },
+                    ],
+                },
+            });
         });
 
         it('should throw ValidationError for injection attempts', async () => {
