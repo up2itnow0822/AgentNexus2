@@ -82,7 +82,8 @@
   "pnpm": {
     "overrides": {
       "node-forge": "^1.4.1",
-      "joi": "^17.13.9"
+      "joi": "^17.13.9",
+      "protobufjs": "^7.5.6"
     }
   }
 }
