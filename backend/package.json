@@ -81,7 +81,8 @@
   "packageManager": "pnpm@10.28.2",
   "overrides": {
     "node-forge": "^1.4.1",
-    "joi": "^17.13.9"
+    "joi": "^17.13.9",
+    "protobufjs": "^7.5.6"
   },
   "pnpm": {
     "overrides": {
@@ -93,7 +94,8 @@
       "undici": "6.24.0",
       "ws": "8.18.3",
       "node-forge": "^1.4.1",
-      "joi": "^17.13.9"
+      "joi": "^17.13.9",
+      "protobufjs": "^7.5.6"
     }
   }
 }
