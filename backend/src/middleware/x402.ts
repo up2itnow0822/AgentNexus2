@@ -40,21 +40,17 @@ const getConfig = (): X402MiddlewareConfig => ({
 });
 
 /**
- * Maximum size for X-Payment header (64KB base64 encoded)
+ * Maximum allowed length of the raw X-Payment header value (bytes/characters).
+ * Set to 8KB — safely below Node's default HTTP max header size (~16KB) so x402
+ * can return 402 PAYMENT_INVALID for oversize payment headers that still reach the app.
  */
-export const MAX_PAYMENT_HEADER_SIZE = 64 * 1024;
+export const MAX_PAYMENT_HEADER_SIZE = 8 * 1024;
 
 /**
- * Parse payment payload from X-PAYMENT header
+ * Parse payment payload from X-PAYMENT header (call only after length guard in paywall)
  */
 const parsePaymentHeader = (header: string | undefined): X402PaymentPayload | null => {
     if (!header) return null;
-
-    // Guard against oversized headers
-    if (header.length > MAX_PAYMENT_HEADER_SIZE) {
-        console.warn('[X402] Payment header exceeds maximum size');
-        return null;
-    }
 
     try {
         const decoded = Buffer.from(header, 'base64').toString('utf-8');
@@ -244,7 +240,7 @@ export const x402Paywall = (priceUsdc: string, description: string) => {
             description,
         };
 
-        // Check for payment header
+        // Length guard before any base64 decode, JSON parse, or facilitator/crypto work
         const paymentHeader = req.headers['x-payment'] as string | undefined;
 
         if (paymentHeader && paymentHeader.length > MAX_PAYMENT_HEADER_SIZE) {

@@ -7,7 +7,6 @@
 import request from 'supertest';
 import express, { Express } from 'express';
 import rateLimit from 'express-rate-limit';
-import { createAgentNexusHttpServer } from '../../src/http-server';
 import { x402Paywall, x402Enabled, getX402Config, MAX_PAYMENT_HEADER_SIZE } from '../../src/middleware/x402';
 import {
     X402PaymentRequest,
@@ -343,22 +342,49 @@ describe('x402 Integration Tests', () => {
             expect(response.body.error).toContain('chain mismatch');
         });
 
-        it('should reject oversized X-Payment headers', async () => {
-            app.get('/test-oversize', x402Paywall('0.01', 'Test'), (_req, res) => {
+        it('should return 431 when X-Payment exceeds Node HTTP header limit', async () => {
+            app.get('/test-http-oversize', x402Paywall('0.01', 'Test'), (_req, res) => {
                 res.json({ success: true });
             });
 
-            // Exceed x402's 64KB cap but stay under the HTTP server's raised header limit
-            const oversizedBase64 = 'x'.repeat(MAX_PAYMENT_HEADER_SIZE + 1);
+            const exceedsNodeHeaderLimit = 'x'.repeat(20 * 1024);
 
-            const server = createAgentNexusHttpServer(app);
-            const response = await request(server)
-                .get('/test-oversize')
-                .set('X-Payment', oversizedBase64);
+            const response = await request(app)
+                .get('/test-http-oversize')
+                .set('X-Payment', exceedsNodeHeaderLimit);
+
+            expect(response.status).toBe(431);
+        });
+
+        it('should return 402 for X-Payment over 8KB before base64 decode', async () => {
+            app.get('/test-x402-oversize', x402Paywall('0.01', 'Test'), (_req, res) => {
+                res.json({ success: true });
+            });
+
+            const decodeSpy = jest.spyOn(Buffer, 'from');
+
+            // Over x402 cap, under Node limit; not valid payment JSON — would fail decode if attempted
+            const overCapHeader = '!'.repeat(MAX_PAYMENT_HEADER_SIZE + 1);
+
+            const response = await request(app)
+                .get('/test-x402-oversize')
+                .set('X-Payment', overCapHeader);
 
             expect(response.status).toBe(402);
             expect(response.body.code).toBe(X402ErrorCode.PAYMENT_INVALID);
             expect(response.body.error).toContain('exceeds maximum size');
+
+            const attemptedPaymentDecode = decodeSpy.mock.calls.some((callArgs) => {
+                const args = callArgs as unknown[];
+                const encoding = args[1];
+                const value = args[0];
+                return encoding === 'base64'
+                    && typeof value === 'string'
+                    && value.length > MAX_PAYMENT_HEADER_SIZE;
+            });
+            expect(attemptedPaymentDecode).toBe(false);
+
+            decodeSpy.mockRestore();
         });
     });
 });
