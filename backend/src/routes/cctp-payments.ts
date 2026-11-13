@@ -7,10 +7,24 @@
 
 import { Router, Request, Response } from 'express';
 import type { Router as RouterType } from 'express';
+import rateLimit from 'express-rate-limit';
 import { CctpRelayerService } from '../services/CctpRelayerService.js';
 
 const router: RouterType = Router();
 const relayerService = new CctpRelayerService();
+
+/** Conservative per-IP cap on relay submissions (fixed defaults, not env-driven). */
+const cctpSubmitRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many CCTP submit requests; try again later' },
+});
+
+function clientSafeRelayErrorMessage(): string {
+  return 'Relay failed';
+}
 
 /**
  * POST /api/payments/cctp/submit
@@ -24,7 +38,7 @@ const relayerService = new CctpRelayerService();
  * - beneficiary: string (Address of the user/agent)
  * - amount: string (Must equal attested burn amount in smallest unit)
  */
-router.post('/submit', async (req: Request, res: Response) => {
+router.post('/submit', cctpSubmitRateLimit, async (req: Request, res: Response) => {
     try {
         const { burnTxHash, sourceChain, referenceId, beneficiary, amount } = req.body;
 
@@ -52,15 +66,15 @@ router.post('/submit', async (req: Request, res: Response) => {
                 mintTx: result.mintTx,
                 creditTx: result.creditTx
             });
-        } catch (error: any) {
-            console.error('Relay failed:', error);
+        } catch {
+            console.error('CCTP relay submit failed');
             res.status(500).json({
                 success: false,
-                error: error.message || 'Relay failed'
+                error: clientSafeRelayErrorMessage(),
             });
         }
 
-    } catch (error) {
+    } catch {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
