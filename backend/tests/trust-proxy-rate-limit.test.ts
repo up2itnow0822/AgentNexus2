@@ -1,5 +1,5 @@
 /**
- * Ensures express-rate-limit keys on the client IP behind Railway's single-hop proxy.
+ * Ensures express-rate-limit keys on the proxy-appended client IP behind Railway.
  */
 import express from 'express';
 import rateLimit from 'express-rate-limit';
@@ -7,10 +7,10 @@ import request from 'supertest';
 
 describe('Express trust proxy (Railway)', () => {
   /**
-   * Railway forwards one hop via X-Forwarded-For; `trust proxy: 1` uses the left-most
-   * client address for rate limiting instead of the edge proxy IP.
+   * With `trust proxy: 1`, Express uses the right-most (proxy-appended) address in
+   * X-Forwarded-For, not a client-forged left-most entry.
    */
-  it('rate-limits per X-Forwarded-For client when trust proxy is 1', async () => {
+  it('rate-limits on proxy-appended IP when X-Forwarded-For has a forged left entry', async () => {
     const app = express();
     app.set('trust proxy', 1);
 
@@ -25,13 +25,21 @@ describe('Express trust proxy (Railway)', () => {
       res.sendStatus(204);
     });
 
-    const clientA = '203.0.113.44';
-    const clientB = '198.51.100.77';
+    const proxyAppendedClient = '1.2.3.4';
+    const forgedLeftA = `6.6.6.6, ${proxyAppendedClient}`;
+    const forgedLeftB = `7.7.7.7, ${proxyAppendedClient}`;
 
-    await request(app).post('/test').set('X-Forwarded-For', clientA).expect(204);
-    await request(app).post('/test').set('X-Forwarded-For', clientA).expect(204);
-    await request(app).post('/test').set('X-Forwarded-For', clientA).expect(429);
+    await request(app).post('/test').set('X-Forwarded-For', forgedLeftA).expect(204);
+    await request(app).post('/test').set('X-Forwarded-For', forgedLeftA).expect(204);
+    await request(app).post('/test').set('X-Forwarded-For', forgedLeftA).expect(429);
 
-    await request(app).post('/test').set('X-Forwarded-For', clientB).expect(204);
+    // Same proxy-appended IP with a different forged left entry stays in the same bucket.
+    await request(app).post('/test').set('X-Forwarded-For', forgedLeftB).expect(429);
+
+    // A different proxy-appended suffix gets a fresh bucket.
+    await request(app)
+      .post('/test')
+      .set('X-Forwarded-For', `6.6.6.6, 198.51.100.77`)
+      .expect(204);
   });
 });
