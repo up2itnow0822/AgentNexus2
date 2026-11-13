@@ -53,6 +53,9 @@ paths = [
     
     # Broadcast files (deployment logs - contain public addresses)
     '''broadcast/''',
+    
+    # Committed pnpm audit SARIF-style JSON (advisory PoC text triggers false positives)
+    '''backend/audit/''',
 ]
 
 # Custom rules for project-specific patterns

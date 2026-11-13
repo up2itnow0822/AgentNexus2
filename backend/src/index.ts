@@ -8,15 +8,13 @@
  * @version 1.0.0
  */
 
+import 'dotenv/config';
+
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
 import { createServer } from 'http';
-
-// Load environment variables
-dotenv.config();
 
 // Import Prisma client from separate module to avoid circular dependencies
 import { prisma } from './lib/db.js';
@@ -29,6 +27,10 @@ export const analytics = new AnalyticsService(prisma);
 // Initialize Express app
 const app: Application = express();
 const httpServer = createServer(app);
+
+// Railway terminates TLS and forwards one HTTP hop; trust proxy count 1 so
+// express-rate-limit and req.ip use the client from X-Forwarded-For, not the edge IP.
+app.set('trust proxy', 1);
 
 // Configuration
 const PORT = process.env.PORT || 8200;
