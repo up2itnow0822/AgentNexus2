@@ -1,4 +1,5 @@
 import { resetCctpNonceLedgerForTests } from '../src/utils/cctpNonceLedger';
+import { CCTP_CONFIG } from '../src/config/cctp';
 
 const sendTransaction = jest.fn();
 const getTransactionReceipt = jest.fn();
@@ -7,18 +8,20 @@ const readContract = jest.fn();
 
 const receiver = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd';
 const beneficiary = '0x1111111111111111111111111111111111111111';
-const sourceTransmitter = '0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275';
+const sourceTransmitter = CCTP_CONFIG['arbitrum-sepolia'].messageTransmitter;
+const arbitrumSepoliaUsdc = CCTP_CONFIG['arbitrum-sepolia'].usdcAddress;
 
 jest.mock('viem', () => {
   const actual = jest.requireActual<typeof import('viem')>('viem');
   const { buildV1CctpMessage } = require('./helpers/cctpTestMessage');
+  const { CCTP_CONFIG: cfg } = require('../src/config/cctp');
   const message = buildV1CctpMessage({
     amount: 1_000_000n,
     mintRecipient: receiver,
     beneficiary,
     nonce: 42n,
-    sourceDomain: 3,
-    burnToken: '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d',
+    sourceDomain: cfg['arbitrum-sepolia'].cctpDomain,
+    burnToken: cfg['arbitrum-sepolia'].usdcAddress,
   });
 
   return {
@@ -55,8 +58,8 @@ describe('CctpRelayerService nonce idempotency', () => {
       mintRecipient: receiver,
       beneficiary,
       nonce: 42n,
-      sourceDomain: 3,
-      burnToken: '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d',
+      sourceDomain: CCTP_CONFIG['arbitrum-sepolia'].cctpDomain,
+      burnToken: arbitrumSepoliaUsdc,
     });
     messageHash = keccak256(message);
   });
