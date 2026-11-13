@@ -8,7 +8,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { prisma } from '../index';
+import { prisma } from '../index.js';
 import { PurchaseStatus, ExecutionStatus } from '@prisma/client';
 
 const router: Router = Router();

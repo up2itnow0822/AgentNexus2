@@ -14,41 +14,41 @@ import {
 import { privateKeyToAccount } from 'viem/accounts';
 import { base, baseSepolia } from 'viem/chains';
 import axios from 'axios';
-import { CCTP_CONFIG, type CctpChainConfig } from '../config/cctp';
+import { CCTP_CONFIG, type CctpChainConfig } from '../config/cctp.js';
 import {
   getCctpIrisBaseUrl,
   resolveCctpNetworkClassFromEnv,
   type CctpNetworkClass,
-} from '../config/cctpIris';
-import { CCTP_MESSAGE_TRANSMITTER_ABI } from '../abis/cctpMessageTransmitter';
+} from '../config/cctpIris.js';
+import { CCTP_MESSAGE_TRANSMITTER_ABI } from '../abis/cctpMessageTransmitter.js';
 import {
   assertCctpCreditRequest,
   computeCctpUsedNonceKey,
   decodeCctpBurnMessage,
   normalizeAddress,
   type DecodedCctpBurn,
-} from '../utils/cctpMessage';
+} from '../utils/cctpMessage.js';
 import {
   assertCctpBurnToken,
   assertCctpHeaderDomains,
   assertCctpHeaderTokenMessengers,
   assertCctpNetworkClassMatch,
   assertMessageTransmitterEmitter,
-} from '../utils/cctpValidation';
+} from '../utils/cctpValidation.js';
 import {
   clearCctpNonceInFlight,
   peekCctpNonceRelay,
   recordCctpNonceRelay,
   tryBeginCctpNonceRelay,
   type CctpNonceRelayResult,
-} from '../utils/cctpNonceLedger';
+} from '../utils/cctpNonceLedger.js';
 import {
   CctpBeneficiaryForbiddenError,
   CctpHttpError,
   CctpRelayUnavailableError,
   CctpValidationError,
-} from '../utils/cctpErrors';
-import { logSafeError } from '../utils/safeLog';
+} from '../utils/cctpErrors.js';
+import { logSafeError } from '../utils/safeLog.js';
 
 const RECEIVER_ABI = [
   {

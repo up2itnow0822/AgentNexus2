@@ -4,10 +4,10 @@
 
 import { Router, Request, Response } from 'express';
 import type { Router as RouterType } from 'express';
-import { CctpRelayerService } from '../services/CctpRelayerService';
-import { authenticate } from '../middleware/auth';
-import { CctpHttpError } from '../utils/cctpErrors';
-import { logSafeError } from '../utils/safeLog';
+import { CctpRelayerService } from '../services/CctpRelayerService.js';
+import { authenticate } from '../middleware/auth.js';
+import { CctpHttpError } from '../utils/cctpErrors.js';
+import { logSafeError } from '../utils/safeLog.js';
 
 const router: RouterType = Router();
 const relayerService = new CctpRelayerService();

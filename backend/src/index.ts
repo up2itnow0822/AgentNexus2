@@ -8,30 +8,32 @@
  * @version 1.0.0
  */
 
+import 'dotenv/config';
+
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
 import { createServer } from 'http';
 
-// Load environment variables
-dotenv.config();
-
-import { assertJwtConfiguredAtStartup } from './config/jwt';
+import { assertJwtConfiguredAtStartup } from './config/jwt.js';
 assertJwtConfiguredAtStartup();
 
 // Import Prisma client from separate module to avoid circular dependencies
-import { prisma } from './lib/db';
+import { prisma } from './lib/db.js';
 export { prisma };
 
 // Initialize Analytics service
-import { AnalyticsService } from './services/AnalyticsService';
+import { AnalyticsService } from './services/AnalyticsService.js';
 export const analytics = new AnalyticsService(prisma);
 
 // Initialize Express app
 const app: Application = express();
 const httpServer = createServer(app);
+
+// Railway terminates TLS and forwards one HTTP hop; trust proxy count 1 so
+// express-rate-limit and req.ip use the client from X-Forwarded-For, not the edge IP.
+app.set('trust proxy', 1);
 
 // Configuration
 const PORT = process.env.PORT || 8200;
@@ -61,21 +63,21 @@ app.use('/api', limiter);
 /**
  * Import routes
  */
-import agentsRouter from './routes/agents';
-import executionsRouter from './routes/executions';
-import usersRouter from './routes/users';
-import builderRouter from './routes/builder';
-import agentZeroRouter from './routes/agentZero';
-import walletRouter from './routes/wallet';
-import socialRouter from './routes/social';
-import receiptsRouter from './routes/receipts';
-import cctpPaymentsRouter from './routes/cctp-payments';
+import agentsRouter from './routes/agents.js';
+import executionsRouter from './routes/executions.js';
+import usersRouter from './routes/users.js';
+import builderRouter from './routes/builder.js';
+import agentZeroRouter from './routes/agentZero.js';
+import walletRouter from './routes/wallet.js';
+import socialRouter from './routes/social.js';
+import receiptsRouter from './routes/receipts.js';
+import cctpPaymentsRouter from './routes/cctp-payments.js';
 
 /**
  * Import middleware
  */
-import { complianceMiddleware } from './middleware/compliance';
-import { getComplianceStatus } from './config/compliance';
+import { complianceMiddleware } from './middleware/compliance.js';
+import { getComplianceStatus } from './config/compliance.js';
 
 /**
  * Register API routes

@@ -17,13 +17,26 @@ export default {
   coverageReporters: ['text', 'lcov', 'html'],
   verbose: true,
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1'
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '^@elizaos/core$': '<rootDir>/src/shims/elizaos-core.jest.ts',
+    '^@elizaos/plugin-twitter$': '<rootDir>/src/shims/elizaos-plugins.jest.ts',
+    '^@elizaos/plugin-discord$': '<rootDir>/src/shims/elizaos-plugins.jest.ts',
+    '^\\.\\./utils/runtimePaths\\.js$': '<rootDir>/src/utils/runtimePaths.jest-mock.ts',
+    '^\\./eliza/ElizaAgentService\\.js$': '<rootDir>/src/services/eliza/ElizaAgentService.jest-mock.ts',
+    '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   transform: {
-    '^.+\\.tsx?$': ['ts-jest', { useESM: true }]
+    '^.+\\.tsx?$': [
+      'ts-jest',
+      {
+        useESM: true,
+        tsconfig: 'tsconfig.jest.json',
+        diagnostics: { ignoreCodes: [1343] },
+      },
+    ],
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(@alchemy|@wagmi|wagmi|viem)/)'
-  ]
+    'node_modules/(?!(@alchemy|@wagmi|wagmi|viem|@elizaos)/)',
+  ],
 };
 

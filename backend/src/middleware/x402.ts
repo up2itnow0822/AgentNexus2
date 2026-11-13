@@ -23,8 +23,8 @@ import {
     X402_NETWORKS,
     USDC_ADDRESSES,
     DEFAULT_FACILITATOR_URL,
-} from '../types/x402-types';
-import { CCTP_CONFIG } from '../config/cctp';
+} from '../types/x402-types.js';
+import { CCTP_CONFIG } from '../config/cctp.js';
 
 // Environment-based configuration
 const getConfig = (): X402MiddlewareConfig => ({

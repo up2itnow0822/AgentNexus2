@@ -1,4 +1,4 @@
-import { AgentZeroConfig } from '../types/agentZero';
+import { AgentZeroConfig } from '../types/agentZero.js';
 
 export const agentZeroConfig: AgentZeroConfig = {
     basicTokenId: process.env.AGENT_ZERO_BASIC_TOKEN_ID || '',

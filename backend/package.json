@@ -80,22 +80,27 @@
   },
   "packageManager": "pnpm@10.28.2",
   "overrides": {
-    "node-forge": "^1.4.1",
-    "joi": "^17.13.9",
-    "protobufjs": "^7.5.6"
+    "node-forge": "1.4.3",
+    "joi": "17.13.9",
+    "protobufjs": "7.6.6"
   },
   "pnpm": {
     "overrides": {
       "@alchemy/aa-accounts": "3.6.1",
       "@alchemy/aa-core": "3.6.1",
-      "axios": "1.15.0",
-      "form-data": "4.0.4",
+      "axios": "1.21.1",
+      "body-parser": "1.20.9",
+      "form-data": "4.0.6",
+      "handlebars": "4.7.10",
+      "joi": "17.13.9",
+      "node-forge": "1.4.3",
+      "protobufjs": "7.6.6",
+      "proxy-addr": "2.0.8",
       "serialize-javascript": "7.0.5",
-      "undici": "6.24.0",
-      "ws": "8.18.3",
-      "node-forge": "^1.4.1",
-      "joi": "^17.13.9",
-      "protobufjs": "^7.5.6"
+      "shell-quote": "1.12.0",
+      "tar": "7.5.23",
+      "undici": "6.29.1",
+      "ws": "8.23.0"
     }
   }
 }
