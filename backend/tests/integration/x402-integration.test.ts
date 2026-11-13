@@ -7,7 +7,8 @@
 import request from 'supertest';
 import express, { Express } from 'express';
 import rateLimit from 'express-rate-limit';
-import { x402Paywall, x402Enabled, getX402Config } from '../../src/middleware/x402';
+import { createAgentNexusHttpServer } from '../../src/http-server';
+import { x402Paywall, x402Enabled, getX402Config, MAX_PAYMENT_HEADER_SIZE } from '../../src/middleware/x402';
 import {
     X402PaymentRequest,
     X402PaymentPayload,
@@ -347,17 +348,17 @@ describe('x402 Integration Tests', () => {
                 res.json({ success: true });
             });
 
-            // Create a payload that exceeds 64KB when base64 encoded
-            const oversizedData = 'x'.repeat(100 * 1024); // 100KB of data
-            const oversizedBase64 = Buffer.from(oversizedData).toString('base64');
+            // Exceed x402's 64KB cap but stay under the HTTP server's raised header limit
+            const oversizedBase64 = 'x'.repeat(MAX_PAYMENT_HEADER_SIZE + 1);
 
-            const response = await request(app)
+            const server = createAgentNexusHttpServer(app);
+            const response = await request(server)
                 .get('/test-oversize')
                 .set('X-Payment', oversizedBase64);
 
-            // Should be treated as invalid payment (parsed as null due to size)
             expect(response.status).toBe(402);
-            expect(response.body.code).toBe(X402ErrorCode.PAYMENT_REQUIRED);
+            expect(response.body.code).toBe(X402ErrorCode.PAYMENT_INVALID);
+            expect(response.body.error).toContain('exceeds maximum size');
         });
     });
 });

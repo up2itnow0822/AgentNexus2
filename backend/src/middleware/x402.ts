@@ -42,7 +42,7 @@ const getConfig = (): X402MiddlewareConfig => ({
 /**
  * Maximum size for X-Payment header (64KB base64 encoded)
  */
-const MAX_PAYMENT_HEADER_SIZE = 64 * 1024;
+export const MAX_PAYMENT_HEADER_SIZE = 64 * 1024;
 
 /**
  * Parse payment payload from X-PAYMENT header
@@ -246,6 +246,15 @@ export const x402Paywall = (priceUsdc: string, description: string) => {
 
         // Check for payment header
         const paymentHeader = req.headers['x-payment'] as string | undefined;
+
+        if (paymentHeader && paymentHeader.length > MAX_PAYMENT_HEADER_SIZE) {
+            res.status(402).json({
+                error: 'Payment header exceeds maximum size',
+                code: X402ErrorCode.PAYMENT_INVALID,
+            });
+            return;
+        }
+
         const payment = parsePaymentHeader(paymentHeader);
 
         if (!payment) {

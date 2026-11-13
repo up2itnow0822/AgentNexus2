@@ -13,7 +13,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import { createServer } from 'http';
+import { createAgentNexusHttpServer } from './http-server';
 
 // Load environment variables
 dotenv.config();
@@ -28,7 +28,7 @@ export const analytics = new AnalyticsService(prisma);
 
 // Initialize Express app
 const app: Application = express();
-const httpServer = createServer(app);
+const httpServer = createAgentNexusHttpServer(app);
 
 // Configuration
 const PORT = process.env.PORT || 8200;

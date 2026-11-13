@@ -15,7 +15,12 @@ if ! command -v forge >/dev/null 2>&1; then
   echo "Foundry forge not installed"; exit 1
 fi
 
+# shellcheck source=validate-fee-recipient.sh
+source "$DIR/validate-fee-recipient.sh"
+validate_platform_fee_recipient "${PLATFORM_FEE_RECIPIENT:-}"
+
 echo "Deploying contracts to chain $CHAIN_ID via $RPC_URL"
+echo "Platform fee recipient: $PLATFORM_FEE_RECIPIENT"
 
 # Deploy Escrow and Entitlements (adjust names if contracts path differs)
 forge script script/Deploy.s.sol \
