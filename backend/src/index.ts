@@ -19,11 +19,11 @@ import { createServer } from 'http';
 dotenv.config();
 
 // Import Prisma client from separate module to avoid circular dependencies
-import { prisma } from './lib/db';
+import { prisma } from './lib/db.js';
 export { prisma };
 
 // Initialize Analytics service
-import { AnalyticsService } from './services/AnalyticsService';
+import { AnalyticsService } from './services/AnalyticsService.js';
 export const analytics = new AnalyticsService(prisma);
 
 // Initialize Express app
@@ -58,21 +58,21 @@ app.use('/api', limiter);
 /**
  * Import routes
  */
-import agentsRouter from './routes/agents';
-import executionsRouter from './routes/executions';
-import usersRouter from './routes/users';
-import builderRouter from './routes/builder';
-import agentZeroRouter from './routes/agentZero';
-import walletRouter from './routes/wallet';
-import socialRouter from './routes/social';
-import receiptsRouter from './routes/receipts';
-import cctpPaymentsRouter from './routes/cctp-payments';
+import agentsRouter from './routes/agents.js';
+import executionsRouter from './routes/executions.js';
+import usersRouter from './routes/users.js';
+import builderRouter from './routes/builder.js';
+import agentZeroRouter from './routes/agentZero.js';
+import walletRouter from './routes/wallet.js';
+import socialRouter from './routes/social.js';
+import receiptsRouter from './routes/receipts.js';
+import cctpPaymentsRouter from './routes/cctp-payments.js';
 
 /**
  * Import middleware
  */
-import { complianceMiddleware } from './middleware/compliance';
-import { getComplianceStatus } from './config/compliance';
+import { complianceMiddleware } from './middleware/compliance.js';
+import { getComplianceStatus } from './config/compliance.js';
 
 /**
  * Register API routes

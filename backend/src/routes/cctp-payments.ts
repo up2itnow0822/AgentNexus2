@@ -7,7 +7,7 @@
 
 import { Router, Request, Response } from 'express';
 import type { Router as RouterType } from 'express';
-import { CctpRelayerService } from '../services/CctpRelayerService';
+import { CctpRelayerService } from '../services/CctpRelayerService.js';
 
 const router: RouterType = Router();
 const relayerService = new CctpRelayerService();
