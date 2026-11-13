@@ -27,3 +27,9 @@ export class CctpRelayUnavailableError extends CctpHttpError {
     super(503, 'CCTP relay unavailable');
   }
 }
+
+export class CctpRateLimitError extends CctpHttpError {
+  constructor(message = 'Too many requests; try again later') {
+    super(429, message);
+  }
+}
