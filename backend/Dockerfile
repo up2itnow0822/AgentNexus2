@@ -1,7 +1,7 @@
 # AgentNexus Backend Dockerfile
 # Multi-stage build for production optimization
 
-FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 AS base
+FROM node:25-bookworm-slim@sha256:81db02c4b671288a03915da9534dbd54f96d0e7c24d80ccc54f5b36b2e684370 AS base
 
 # Install system dependencies for native modules (required by ELIZAOS)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -38,7 +38,7 @@ RUN pnpm run build
 RUN pnpm prune --prod
 
 # Production stage
-FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 AS runner
+FROM node:25-bookworm-slim@sha256:81db02c4b671288a03915da9534dbd54f96d0e7c24d80ccc54f5b36b2e684370 AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
