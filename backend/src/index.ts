@@ -16,6 +16,9 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { createServer } from 'http';
 
+import { assertJwtConfiguredAtStartup } from './config/jwt.js';
+assertJwtConfiguredAtStartup();
+
 // Import Prisma client from separate module to avoid circular dependencies
 import { prisma } from './lib/db.js';
 export { prisma };
