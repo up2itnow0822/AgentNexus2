@@ -18,6 +18,9 @@ import { createServer } from 'http';
 // Load environment variables
 dotenv.config();
 
+import { assertJwtConfiguredAtStartup } from './config/jwt';
+assertJwtConfiguredAtStartup();
+
 // Import Prisma client from separate module to avoid circular dependencies
 import { prisma } from './lib/db';
 export { prisma };
