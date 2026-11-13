@@ -80,9 +80,9 @@
   },
   "packageManager": "pnpm@10.28.2",
   "overrides": {
-    "node-forge": "1.4.3",
+    "node-forge": "1.4.1",
     "joi": "17.13.9",
-    "protobufjs": "7.6.6"
+    "protobufjs": "7.5.6"
   },
   "pnpm": {
     "overrides": {
@@ -93,8 +93,8 @@
       "form-data": "4.0.6",
       "handlebars": "4.7.10",
       "joi": "17.13.9",
-      "node-forge": "1.4.3",
-      "protobufjs": "7.6.6",
+      "node-forge": "1.4.1",
+      "protobufjs": "7.5.6",
       "proxy-addr": "2.0.8",
       "serialize-javascript": "7.0.5",
       "shell-quote": "1.12.0",
