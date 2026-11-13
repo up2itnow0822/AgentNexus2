@@ -8,6 +8,8 @@
  * - CCTP V1 message header: body at offset 116
  * - CCTP V2 message header: body at offset 148
  * - BurnMessage (V1/V2): amount at body+68, mintRecipient at body+36
+ * - BurnMessage (V1/V2): messageSender (credit beneficiary) at body+100
+ * - Message header: sourceDomain at +4, nonce uint64 at +12
  * - BurnMessageV2: feeExecuted at body+164 (minted = amount - feeExecuted)
  */
 
@@ -15,14 +17,19 @@ export const CCTP_V1_BODY_OFFSET = 116;
 export const CCTP_V2_BODY_OFFSET = 148;
 export const BURN_MINT_RECIPIENT_OFFSET = 36;
 export const BURN_AMOUNT_OFFSET = 68;
+export const BURN_MESSAGE_SENDER_OFFSET = 100;
 export const BURN_V2_FEE_EXECUTED_OFFSET = 164;
 export const BURN_V1_BODY_LENGTH = 132;
 export const BURN_V2_BODY_LENGTH = 228;
+export const CCTP_HEADER_NONCE_OFFSET = 12;
 
 export interface DecodedCctpBurn {
   messageVersion: number;
   amount: bigint;
   mintRecipient: `0x${string}`;
+  /** Burn `messageSender` — authoritative credit beneficiary for this burn. */
+  beneficiary: `0x${string}`;
+  attestationNonceKey: string;
 }
 
 function readUint32(bytes: Uint8Array, offset: number): number {
@@ -32,6 +39,14 @@ function readUint32(bytes: Uint8Array, offset: number): number {
     (bytes[offset + 2]! << 8) |
     bytes[offset + 3]!
   ) >>> 0;
+}
+
+function readUint64(bytes: Uint8Array, offset: number): bigint {
+  let value = 0n;
+  for (let i = 0; i < 8; i++) {
+    value = (value << 8n) | BigInt(bytes[offset + i]!);
+  }
+  return value;
 }
 
 function readUint256(bytes: Uint8Array, offset: number): bigint {
@@ -79,7 +94,11 @@ export function decodeCctpBurnMessage(messageBytes: `0x${string}` | string): Dec
   }
 
   const mintRecipient = readAddressFromBytes32(bytes, bodyOffset + BURN_MINT_RECIPIENT_OFFSET);
+  const beneficiary = readAddressFromBytes32(bytes, bodyOffset + BURN_MESSAGE_SENDER_OFFSET);
   const burnedAmount = readUint256(bytes, bodyOffset + BURN_AMOUNT_OFFSET);
+  const sourceDomain = readUint32(bytes, 4);
+  const nonce = readUint64(bytes, CCTP_HEADER_NONCE_OFFSET);
+  const attestationNonceKey = `${sourceDomain}:${nonce.toString()}`;
 
   let amount = burnedAmount;
   if (messageVersion !== 0) {
@@ -97,7 +116,14 @@ export function decodeCctpBurnMessage(messageBytes: `0x${string}` | string): Dec
     throw new Error('Decoded CCTP burn amount must be greater than zero');
   }
 
-  return { messageVersion, amount, mintRecipient };
+  return { messageVersion, amount, mintRecipient, beneficiary, attestationNonceKey };
+}
+
+/**
+ * Stable idempotency key from the attested CCTP message header nonce.
+ */
+export function getCctpAttestationNonceKey(messageBytes: `0x${string}` | string): string {
+  return decodeCctpBurnMessage(messageBytes).attestationNonceKey;
 }
 
 /**
@@ -138,4 +164,24 @@ export function assertCctpCreditRequest(params: {
   }
 
   return decoded;
+}
+
+/**
+ * Reject optional client-supplied beneficiary when it does not match the attested burn body.
+ */
+export function assertAttestedBeneficiary(params: {
+  messageBytes: `0x${string}` | string;
+  claimedBeneficiary?: string;
+}): { beneficiary: `0x${string}` } {
+  const decoded = decodeCctpBurnMessage(params.messageBytes);
+
+  if (params.claimedBeneficiary !== undefined && params.claimedBeneficiary !== '') {
+    if (normalizeAddress(params.claimedBeneficiary) !== normalizeAddress(decoded.beneficiary)) {
+      throw new Error(
+        `Claimed beneficiary ${params.claimedBeneficiary} does not match attested messageSender ${decoded.beneficiary}`
+      );
+    }
+  }
+
+  return { beneficiary: decoded.beneficiary };
 }

@@ -13,7 +13,16 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { base, baseSepolia } from 'viem/chains';
 import axios from 'axios';
 import { CCTP_CONFIG } from '../config/cctp';
-import { assertCctpCreditRequest } from '../utils/cctpMessage';
+import {
+  assertAttestedBeneficiary,
+  assertCctpCreditRequest,
+  decodeCctpBurnMessage,
+} from '../utils/cctpMessage';
+import {
+  peekCctpNonceRelay,
+  recordCctpNonceRelay,
+  type CctpNonceRelayResult,
+} from '../utils/cctpNonceLedger';
 
 // Minimal ABI for MessageTransmitter
 const MESSAGE_TRANSMITTER_ABI = [
@@ -67,9 +76,9 @@ export class CctpRelayerService {
         burnTxHash: string,
         sourceChainCaip2: string,
         referenceId: string,
-        beneficiary: string,
-        amount: string // Parsed amount from request, used for verification
-    ) {
+        /** Ignored for credit; if present and wrong, the relay is rejected. */
+        claimedBeneficiary?: string
+    ): Promise<CctpNonceRelayResult & { beneficiary: string }> {
         if (!process.env.ENABLE_CCTP_RELAYER || process.env.ENABLE_CCTP_RELAYER !== 'true') {
             throw new Error('Relayer disabled');
         }
@@ -103,6 +112,20 @@ export class CctpRelayerService {
 
         console.log(`[CCTP Relayer] Found message hash: ${messageHash}`);
 
+        const decoded = decodeCctpBurnMessage(messageBytes);
+
+        const existing = peekCctpNonceRelay(decoded.attestationNonceKey);
+        if (existing) {
+            console.log(
+                `[CCTP Relayer] Skipping relay; nonce already processed: ${decoded.attestationNonceKey}`
+            );
+            return {
+                ...existing,
+                status: 'ALREADY_RELAYED',
+                beneficiary: decoded.beneficiary,
+            };
+        }
+
         // Bind credit amount/recipient to attested burn message BEFORE mint/credit.
         // Client-supplied amount was previously trusted, enabling arbitrary credit inflation
         // (especially on the already-minted path). Also bind on-chain referenceId to
@@ -110,9 +133,14 @@ export class CctpRelayerService {
         const receiverAddress = process.env.CCTP_BASE_RECEIVER_CONTRACT;
         if (!receiverAddress) throw new Error('CCTP_BASE_RECEIVER_CONTRACT not configured');
 
-        const decoded = assertCctpCreditRequest({
+        const { beneficiary } = assertAttestedBeneficiary({
             messageBytes,
-            claimedAmount: amount,
+            claimedBeneficiary,
+        });
+
+        const creditMeta = assertCctpCreditRequest({
+            messageBytes,
+            claimedAmount: decoded.amount.toString(),
             receiverAddress,
         });
 
@@ -139,9 +167,11 @@ export class CctpRelayerService {
             transport: http(destRpc)
         });
 
+        let mintTx = '...';
+
         // Submit receiveMessage
         try {
-            const mintTx = await walletClient.sendTransaction({
+            mintTx = await walletClient.sendTransaction({
                 chain: destChain,
                 to: destConfig.messageTransmitter as `0x${string}`,
                 data: encodeFunctionData({
@@ -170,17 +200,23 @@ export class CctpRelayerService {
                 args: [
                     messageHash,
                     beneficiary as `0x${string}`,
-                    decoded.amount
+                    creditMeta.amount
                 ]
             })
         });
 
         console.log(`[CCTP Relayer] Credit applied: ${creditTx}`);
 
-        return {
+        const result: CctpNonceRelayResult = {
             status: 'CREDITED',
-            mintTx: '...',
-            creditTx: creditTx
+            mintTx,
+            creditTx,
+        };
+        recordCctpNonceRelay(decoded.attestationNonceKey, result);
+
+        return {
+            ...result,
+            beneficiary,
         };
     }
 
