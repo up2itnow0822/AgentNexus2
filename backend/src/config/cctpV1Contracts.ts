@@ -3,7 +3,7 @@
  * Source: https://developers.circle.com/cctp/v1/evm-smart-contracts
  */
 
-import type { CctpNetworkClass } from './cctpIris';
+import type { CctpNetworkClass } from './cctpIris.js';
 
 export type CctpV1DomainId = 0 | 2 | 3 | 6;
 

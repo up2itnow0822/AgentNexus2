@@ -5,7 +5,7 @@
  * Source: https://developers.circle.com/stablecoins/docs/cctp-protocol-contract-addresses
  */
 
-import type { CctpNetworkClass } from './cctpIris';
+import type { CctpNetworkClass } from './cctpIris.js';
 
 export interface CctpChainConfig {
     caip2: string;              // eip155:10 etc

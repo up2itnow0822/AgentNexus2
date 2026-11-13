@@ -1,12 +1,12 @@
-import type { CctpChainConfig } from '../config/cctp';
-import { circleV1MessengerAddress } from '../config/cctpV1Contracts';
+import type { CctpChainConfig } from '../config/cctp.js';
+import { circleV1MessengerAddress } from '../config/cctpV1Contracts.js';
 import {
   CCTP_BASE_DOMAIN_ID,
   CCTP_HEADER_RECIPIENT_OFFSET,
   CCTP_HEADER_SENDER_OFFSET,
   normalizeAddress,
-} from './cctpMessage';
-import { CctpValidationError } from './cctpErrors';
+} from './cctpMessage.js';
+import { CctpValidationError } from './cctpErrors.js';
 import type { Log } from 'viem';
 
 export const BURN_BODY_VERSION_OFFSET = 0;
