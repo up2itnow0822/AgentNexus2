@@ -14,6 +14,9 @@ export default {
   verbose: true,
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^@elizaos/core$': '<rootDir>/src/shims/elizaos-core.jest.ts',
+    '^@elizaos/plugin-twitter$': '<rootDir>/src/shims/elizaos-plugins.jest.ts',
+    '^@elizaos/plugin-discord$': '<rootDir>/src/shims/elizaos-plugins.jest.ts',
     '^\\.\\./utils/runtimePaths\\.js$': '<rootDir>/src/utils/runtimePaths.jest-mock.ts',
     '^\\./eliza/ElizaAgentService\\.js$': '<rootDir>/src/services/eliza/ElizaAgentService.jest-mock.ts',
     '^(\\.{1,2}/.*)\\.js$': '$1',
