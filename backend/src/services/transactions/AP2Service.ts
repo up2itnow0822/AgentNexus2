@@ -6,7 +6,7 @@ import {
     PaymentMandateContents,
     PaymentRequest,
     PaymentItem
-} from '../../types/ap2';
+} from '../../types/ap2.js';
 import { ethers } from 'ethers';
 
 export class AP2Service {

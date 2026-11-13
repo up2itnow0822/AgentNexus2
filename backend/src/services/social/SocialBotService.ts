@@ -1,4 +1,4 @@
-import { ExecutionService } from '../ExecutionService';
+import { ExecutionService } from '../ExecutionService.js';
 
 
 interface SocialMessage {

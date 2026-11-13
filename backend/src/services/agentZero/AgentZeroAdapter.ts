@@ -10,9 +10,9 @@ import axios, { AxiosInstance } from 'axios';
 import {
   AgentZeroConfig,
   AgentZeroRequest,
-} from '../../types/agentZero';
-import { AgentAdapter, AgentExecutionRequest, AgentExecutionResponse } from '../../types/agent';
-import { AgentZeroTierService } from './AgentZeroTierService';
+} from '../../types/agentZero.js';
+import { AgentAdapter, AgentExecutionRequest, AgentExecutionResponse } from '../../types/agent.js';
+import { AgentZeroTierService } from './AgentZeroTierService.js';
 
 export class AgentZeroAdapter implements AgentAdapter {
   private docker: Docker;

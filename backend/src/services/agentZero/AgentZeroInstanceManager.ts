@@ -12,8 +12,8 @@ import {
   InstanceStatusResponse,
   AgentZeroConfig,
   ContainerInfo,
-} from '../../types/agentZero';
-import { AgentZeroTierService } from './AgentZeroTierService';
+} from '../../types/agentZero.js';
+import { AgentZeroTierService } from './AgentZeroTierService.js';
 
 export class AgentZeroInstanceManager {
   private docker: Docker;

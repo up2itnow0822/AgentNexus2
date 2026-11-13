@@ -8,11 +8,11 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { prisma } from '../lib/db';
+import { prisma } from '../lib/db.js';
 import { ExecutionStatus } from '@prisma/client';
-import { ExecutionService } from '../services/ExecutionService';
-import { AgentService } from '../services/AgentService';
-import { authenticate } from '../middleware/auth';
+import { ExecutionService } from '../services/ExecutionService.js';
+import { AgentService } from '../services/AgentService.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router: Router = Router();
 

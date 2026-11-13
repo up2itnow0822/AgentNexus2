@@ -9,7 +9,7 @@
  * When disabled, logs are still generated but not persisted.
  */
 
-import { complianceConfig } from '../config/compliance';
+import { complianceConfig } from '../config/compliance.js';
 
 /**
  * Audit event types for compliance tracking
