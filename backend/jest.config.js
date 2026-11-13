@@ -1,6 +1,9 @@
+if (!process.env.JWT_SECRET?.trim()) {
+  process.env.JWT_SECRET = 'jest-backend-test-jwt-secret';
+}
+
 export default {
   preset: 'ts-jest/presets/default-esm',
-  setupFiles: ['<rootDir>/tests/jest.env.setup.ts'],
   testEnvironment: 'node',
   roots: ['<rootDir>/tests', '<rootDir>/src'],
   testMatch: ['**/*.test.ts'],
