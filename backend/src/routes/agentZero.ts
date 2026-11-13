@@ -7,11 +7,11 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient, AgentZeroTier } from '@prisma/client';
 import Docker from 'dockerode';
 import { body, query, validationResult } from 'express-validator';
-import { AgentZeroAdapter } from '../services/agentZero/AgentZeroAdapter';
-import { AgentZeroInstanceManager } from '../services/agentZero/AgentZeroInstanceManager';
-import { AgentZeroTierService } from '../services/agentZero/AgentZeroTierService';
-import { WalletService } from '../services/WalletService';
-import { agentZeroConfig } from '../config/agentZero';
+import { AgentZeroAdapter } from '../services/agentZero/AgentZeroAdapter.js';
+import { AgentZeroInstanceManager } from '../services/agentZero/AgentZeroInstanceManager.js';
+import { AgentZeroTierService } from '../services/agentZero/AgentZeroTierService.js';
+import { WalletService } from '../services/WalletService.js';
+import { agentZeroConfig } from '../config/agentZero.js';
 
 const router: Router = Router();
 

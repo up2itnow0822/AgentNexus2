@@ -12,8 +12,8 @@ import { createPublicClient, createWalletClient, http, encodeFunctionData, parse
 import { privateKeyToAccount } from 'viem/accounts';
 import { base, baseSepolia } from 'viem/chains';
 import axios from 'axios';
-import { CCTP_CONFIG } from '../config/cctp';
-import { assertCctpCreditRequest } from '../utils/cctpMessage';
+import { CCTP_CONFIG } from '../config/cctp.js';
+import { assertCctpCreditRequest } from '../utils/cctpMessage.js';
 
 // Minimal ABI for MessageTransmitter
 const MESSAGE_TRANSMITTER_ABI = [

@@ -1,4 +1,4 @@
-import { HyperliquidService } from '../HyperliquidService';
+import { HyperliquidService } from '../HyperliquidService.js';
 
 describe('HyperliquidService', () => {
   let service: HyperliquidService;
