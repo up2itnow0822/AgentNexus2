@@ -7,7 +7,13 @@
 import request from 'supertest';
 import express, { Express } from 'express';
 import rateLimit from 'express-rate-limit';
-import { x402Paywall, x402Enabled, getX402Config, MAX_PAYMENT_HEADER_SIZE } from '../../src/middleware/x402';
+import {
+    x402Paywall,
+    x402Enabled,
+    getX402Config,
+    MAX_PAYMENT_HEADER_SIZE,
+    getXPaymentHeaderByteLength,
+} from '../../src/middleware/x402';
 import {
     X402PaymentRequest,
     X402PaymentPayload,
@@ -347,7 +353,7 @@ describe('x402 Integration Tests', () => {
                 res.json({ success: true });
             });
 
-            const exceedsNodeHeaderLimit = 'x'.repeat(20 * 1024);
+            const exceedsNodeHeaderLimit = 'x'.repeat(16 * 1024 + 1);
 
             const response = await request(app)
                 .get('/test-http-oversize')
@@ -363,8 +369,9 @@ describe('x402 Integration Tests', () => {
 
             const decodeSpy = jest.spyOn(Buffer, 'from');
 
-            // Over x402 cap, under Node limit; not valid payment JSON — would fail decode if attempted
+            // Over 8192 UTF-8 bytes, under Node ~16KB limit; invalid payload — fails if decoded
             const overCapHeader = '!'.repeat(MAX_PAYMENT_HEADER_SIZE + 1);
+            expect(getXPaymentHeaderByteLength(overCapHeader)).toBe(MAX_PAYMENT_HEADER_SIZE + 1);
 
             const response = await request(app)
                 .get('/test-x402-oversize')
@@ -380,11 +387,37 @@ describe('x402 Integration Tests', () => {
                 const value = args[0];
                 return encoding === 'base64'
                     && typeof value === 'string'
-                    && value.length > MAX_PAYMENT_HEADER_SIZE;
+                    && Buffer.byteLength(value, 'utf8') > MAX_PAYMENT_HEADER_SIZE;
             });
             expect(attemptedPaymentDecode).toBe(false);
 
             decodeSpy.mockRestore();
+        });
+
+        it('should return 402 when array-valued X-Payment exceeds byte cap', async () => {
+            const partA = 'a'.repeat(5000);
+            const partB = 'b'.repeat(4000);
+            expect(getXPaymentHeaderByteLength([partA, partB])).toBeGreaterThan(MAX_PAYMENT_HEADER_SIZE);
+
+            const paywall = x402Paywall('0.01', 'Test');
+            const json = jest.fn();
+            const status = jest.fn().mockReturnValue({ json });
+            const req = {
+                method: 'GET',
+                path: '/test-x402-array',
+                headers: { 'x-payment': [partA, partB] },
+            } as unknown as Parameters<typeof paywall>[0];
+            const res = { status } as unknown as Parameters<typeof paywall>[1];
+            const next = jest.fn();
+
+            await paywall(req, res, next);
+
+            expect(status).toHaveBeenCalledWith(402);
+            expect(json).toHaveBeenCalledWith(expect.objectContaining({
+                code: X402ErrorCode.PAYMENT_INVALID,
+                error: expect.stringContaining('exceeds maximum size'),
+            }));
+            expect(next).not.toHaveBeenCalled();
         });
     });
 });

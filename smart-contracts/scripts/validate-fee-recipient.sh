@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Validates PLATFORM_FEE_RECIPIENT before deploy (no on-chain calls).
-set -euo pipefail
+# Intentionally no "set -euo pipefail" — this file is sourced by deploy scripts.
 
 PLACEHOLDER_FEE_RECIPIENT="0x742d35cC6634c0532925A3b844bc9E7595F0beB1"
 ZERO_ADDRESS="0x0000000000000000000000000000000000000000"

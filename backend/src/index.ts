@@ -29,6 +29,11 @@ export const analytics = new AnalyticsService(prisma);
 // Initialize Express app
 const app: Application = express();
 const httpServer = createServer(app);
+// Explicit timeouts (maxHeaderSize stays at Node default ~16KB).
+// headersTimeout: Node's default 60s — limits slowloris while headers are sent.
+httpServer.headersTimeout = 60_000;
+// requestTimeout: 120s — API requests should finish well under upstream/LB idle limits.
+httpServer.requestTimeout = 120_000;
 
 // Configuration
 const PORT = process.env.PORT || 8200;
