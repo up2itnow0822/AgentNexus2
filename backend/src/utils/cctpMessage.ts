@@ -13,6 +13,9 @@
  * - BurnMessageV2: feeExecuted at body+164 (minted = amount - feeExecuted)
  */
 
+export const CCTP_SUPPORTED_MESSAGE_VERSION = 0;
+export const CCTP_SUPPORTED_BURN_BODY_VERSION = 0;
+export const CCTP_BASE_DOMAIN_ID = 6;
 export const CCTP_V1_BODY_OFFSET = 116;
 export const CCTP_V2_BODY_OFFSET = 148;
 export const BURN_MINT_RECIPIENT_OFFSET = 36;
@@ -87,10 +90,19 @@ export function decodeCctpBurnMessage(messageBytes: `0x${string}` | string): Dec
   }
 
   const messageVersion = readUint32(bytes, 0);
-  const bodyOffset = messageVersion === 0 ? CCTP_V1_BODY_OFFSET : CCTP_V2_BODY_OFFSET;
+  if (messageVersion !== CCTP_SUPPORTED_MESSAGE_VERSION) {
+    throw new Error('Unsupported CCTP message version');
+  }
+
+  const bodyOffset = CCTP_V1_BODY_OFFSET;
 
   if (bytes.length < bodyOffset + BURN_V1_BODY_LENGTH) {
-    throw new Error(`CCTP message body truncated for version ${messageVersion}`);
+    throw new Error('CCTP message body truncated');
+  }
+
+  const burnBodyVersion = readUint32(bytes, bodyOffset + 0);
+  if (burnBodyVersion !== CCTP_SUPPORTED_BURN_BODY_VERSION) {
+    throw new Error('Unsupported CCTP burn body version');
   }
 
   const mintRecipient = readAddressFromBytes32(bytes, bodyOffset + BURN_MINT_RECIPIENT_OFFSET);
@@ -100,17 +112,7 @@ export function decodeCctpBurnMessage(messageBytes: `0x${string}` | string): Dec
   const nonce = readUint64(bytes, CCTP_HEADER_NONCE_OFFSET);
   const attestationNonceKey = `${sourceDomain}:${nonce.toString()}`;
 
-  let amount = burnedAmount;
-  if (messageVersion !== 0) {
-    if (bytes.length < bodyOffset + BURN_V2_BODY_LENGTH) {
-      throw new Error('CCTP V2 burn message body truncated');
-    }
-    const feeExecuted = readUint256(bytes, bodyOffset + BURN_V2_FEE_EXECUTED_OFFSET);
-    if (feeExecuted > burnedAmount) {
-      throw new Error('CCTP V2 feeExecuted exceeds burn amount');
-    }
-    amount = burnedAmount - feeExecuted;
-  }
+  const amount = burnedAmount;
 
   if (amount <= 0n) {
     throw new Error('Decoded CCTP burn amount must be greater than zero');

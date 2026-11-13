@@ -1,244 +1,375 @@
 /**
  * CCTP Relayer Service
- * 
- * Handles permissionless relaying of USDC from Source Chains (Arb, OP) to Base.
- * 1. Observes CCTP burn events on Source Chain.
- * 2. Fetches attestation from Circle Iris API.
- * 3. Submits mint to Base MessageTransmitter.
- * 4. Credits the AgentNexus Receiver contract.
  */
 
-import { createPublicClient, createWalletClient, http, encodeFunctionData, parseEventLogs, keccak256 } from 'viem';
+import {
+  createPublicClient,
+  createWalletClient,
+  http,
+  encodeFunctionData,
+  parseEventLogs,
+  keccak256,
+  type Hex,
+} from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { base, baseSepolia } from 'viem/chains';
 import axios from 'axios';
-import { CCTP_CONFIG } from '../config/cctp';
+import { CCTP_CONFIG, type CctpChainConfig } from '../config/cctp';
 import {
-  assertAttestedBeneficiary,
+  getCctpIrisBaseUrl,
+  resolveCctpNetworkClassFromEnv,
+  type CctpNetworkClass,
+} from '../config/cctpIris';
+import {
   assertCctpCreditRequest,
   decodeCctpBurnMessage,
+  normalizeAddress,
 } from '../utils/cctpMessage';
 import {
+  assertCctpBurnToken,
+  assertCctpHeaderDomains,
+  assertCctpNetworkClassMatch,
+  assertMessageTransmitterEmitter,
+} from '../utils/cctpValidation';
+import {
+  clearCctpNonceInFlight,
   peekCctpNonceRelay,
   recordCctpNonceRelay,
+  tryBeginCctpNonceRelay,
   type CctpNonceRelayResult,
 } from '../utils/cctpNonceLedger';
+import {
+  CctpBeneficiaryForbiddenError,
+  CctpHttpError,
+  CctpRelayUnavailableError,
+  CctpValidationError,
+} from '../utils/cctpErrors';
+import { logSafeError } from '../utils/safeLog';
 
-// Minimal ABI for MessageTransmitter
 const MESSAGE_TRANSMITTER_ABI = [
-    {
-        anonymous: false,
-        inputs: [{ indexed: false, name: 'message', type: 'bytes' }],
-        name: 'MessageSent',
-        type: 'event'
-    },
-    {
-        name: 'receiveMessage',
-        type: 'function',
-        inputs: [
-            { name: 'message', type: 'bytes' },
-            { name: 'attestation', type: 'bytes' }
-        ],
-        outputs: [{ name: 'success', type: 'bool' }]
-    }
+  {
+    anonymous: false,
+    inputs: [{ indexed: false, name: 'message', type: 'bytes' }],
+    name: 'MessageSent',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: 'caller', type: 'address' },
+      { indexed: true, name: 'sourceDomain', type: 'uint32' },
+      { indexed: true, name: 'nonce', type: 'uint64' },
+      { indexed: false, name: 'sender', type: 'bytes32' },
+      { indexed: false, name: 'messageBody', type: 'bytes' },
+    ],
+    name: 'MessageReceived',
+    type: 'event',
+  },
+  {
+    name: 'receiveMessage',
+    type: 'function',
+    inputs: [
+      { name: 'message', type: 'bytes' },
+      { name: 'attestation', type: 'bytes' },
+    ],
+    outputs: [{ name: 'success', type: 'bool' }],
+  },
+  {
+    name: 'usedNonces',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: '_nonce', type: 'bytes32' }],
+    outputs: [{ name: '', type: 'bool' }],
+  },
 ] as const;
 
-// Minimal ABI for AgentNexusReceiver
 const RECEIVER_ABI = [
-    {
-        name: 'creditFromCctp',
-        type: 'function',
-        inputs: [
-            { name: 'referenceId', type: 'bytes32' },
-            { name: 'beneficiary', type: 'address' },
-            { name: 'amount', type: 'uint256' }
-        ],
-        outputs: []
-    }
+  {
+    name: 'creditFromCctp',
+    type: 'function',
+    inputs: [
+      { name: 'referenceId', type: 'bytes32' },
+      { name: 'beneficiary', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [],
+  },
+  {
+    name: 'isReferenceProcessed',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'referenceId', type: 'bytes32' }],
+    outputs: [{ name: '', type: 'bool' }],
+  },
 ] as const;
+
+function hexToBytes(hex: string): Uint8Array {
+  const normalized = hex.startsWith('0x') ? hex.slice(2) : hex;
+  const out = new Uint8Array(normalized.length / 2);
+  for (let i = 0; i < out.length; i++) {
+    out[i] = parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
+  }
+  return out;
+}
 
 export class CctpRelayerService {
-    private relayerAccount;
+  private relayerAccount;
 
-    constructor() {
-        const privateKey = process.env.RELAYER_PRIVATE_KEY;
-        if (!privateKey) {
-            console.warn('[CCTP Relayer] RELAYER_PRIVATE_KEY not set. Relayer disabled.');
-        } else {
-            this.relayerAccount = privateKeyToAccount(privateKey as `0x${string}`);
-        }
+  constructor() {
+    const privateKey = process.env.RELAYER_PRIVATE_KEY;
+    if (!privateKey) {
+      console.warn('[CCTP Relayer] relayer signing key not configured');
+    } else {
+      this.relayerAccount = privateKeyToAccount(privateKey as `0x${string}`);
+    }
+  }
+
+  async relayTransfer(
+    burnTxHash: string,
+    sourceChainCaip2: string,
+    referenceId: string,
+    authenticatedWalletAddress: string
+  ): Promise<CctpNonceRelayResult & { beneficiary: string }> {
+    if (!process.env.ENABLE_CCTP_RELAYER || process.env.ENABLE_CCTP_RELAYER !== 'true') {
+      throw new CctpRelayUnavailableError();
+    }
+    if (!this.relayerAccount) {
+      throw new CctpRelayUnavailableError();
     }
 
-    /**
-     * Process a new CCTP burn
-     */
-    async relayTransfer(
-        burnTxHash: string,
-        sourceChainCaip2: string,
-        referenceId: string,
-        /** Ignored for credit; if present and wrong, the relay is rejected. */
-        claimedBeneficiary?: string
-    ): Promise<CctpNonceRelayResult & { beneficiary: string }> {
-        if (!process.env.ENABLE_CCTP_RELAYER || process.env.ENABLE_CCTP_RELAYER !== 'true') {
-            throw new Error('Relayer disabled');
-        }
-        if (!this.relayerAccount) throw new Error('Relayer account not configured');
+    const networkClass = resolveCctpNetworkClassFromEnv();
+    const sourceConfig = Object.values(CCTP_CONFIG).find((c) => c.caip2 === sourceChainCaip2);
+    if (!sourceConfig) {
+      throw new CctpValidationError();
+    }
+    assertCctpNetworkClassMatch(sourceConfig, networkClass);
 
-        console.log(`[CCTP Relayer] Processing ${burnTxHash} from ${sourceChainCaip2}`);
+    const destNetworkKey = networkClass === 'mainnet' ? 'base' : 'base-sepolia';
+    const destConfig = CCTP_CONFIG[destNetworkKey];
+    const destChain = networkClass === 'mainnet' ? base : baseSepolia;
 
-        // 1. Get Source Chain Config
-        const sourceConfig = Object.values(CCTP_CONFIG).find(c => c.caip2 === sourceChainCaip2);
-        if (!sourceConfig) throw new Error(`Unsupported source chain: ${sourceChainCaip2}`);
+    const sourceRpc = process.env[sourceConfig.rpcUrlEnv];
+    const destRpc = process.env[destConfig.rpcUrlEnv];
+    if (!sourceRpc || !destRpc) {
+      throw new CctpRelayUnavailableError();
+    }
 
-        // 2. Fetch Tx and Parse Logs
-        const rpcUrl = process.env[sourceConfig.rpcUrlEnv];
-        const publicClient = createPublicClient({
-            transport: http(rpcUrl)
-        });
+    const sourcePublicClient = createPublicClient({ transport: http(sourceRpc) });
+    const destPublicClient = createPublicClient({ chain: destChain, transport: http(destRpc) });
 
-        const receipt = await publicClient.getTransactionReceipt({ hash: burnTxHash as `0x${string}` });
+    const receipt = await sourcePublicClient.getTransactionReceipt({
+      hash: burnTxHash as Hex,
+    });
 
-        // Find MessageSent event
-        const logs = parseEventLogs({
-            abi: MESSAGE_TRANSMITTER_ABI,
-            eventName: 'MessageSent',
-            logs: receipt.logs
-        });
+    assertMessageTransmitterEmitter(receipt.logs, sourceConfig.messageTransmitter);
 
-        if (logs.length === 0) throw new Error('No MessageSent event found in transaction');
-        const log = logs[0] as any; // Cast to avoid TS issues
-        const messageBytes = log.args.message as `0x${string}`;
-        const messageHash = keccak256(messageBytes);
+    const transmitterLogs = receipt.logs.filter(
+      (log) =>
+        normalizeAddress(log.address) === normalizeAddress(sourceConfig.messageTransmitter)
+    );
 
-        console.log(`[CCTP Relayer] Found message hash: ${messageHash}`);
+    const parsed = parseEventLogs({
+      abi: MESSAGE_TRANSMITTER_ABI,
+      eventName: 'MessageSent',
+      logs: transmitterLogs,
+    });
 
-        const decoded = decodeCctpBurnMessage(messageBytes);
+    if (parsed.length === 0) {
+      throw new CctpValidationError();
+    }
 
-        const existing = peekCctpNonceRelay(decoded.attestationNonceKey);
-        if (existing) {
-            console.log(
-                `[CCTP Relayer] Skipping relay; nonce already processed: ${decoded.attestationNonceKey}`
-            );
-            return {
-                ...existing,
-                status: 'ALREADY_RELAYED',
-                beneficiary: decoded.beneficiary,
-            };
-        }
+    const sentEvent = parsed[0] as unknown as { args: { message: Hex } };
+    const messageBytes = sentEvent.args.message;
+    const messageHash = keccak256(messageBytes);
+    const decoded = decodeCctpBurnMessage(messageBytes);
+    const messageRaw = hexToBytes(messageBytes);
+    assertCctpHeaderDomains(messageRaw, sourceConfig);
+    assertCctpBurnToken(messageRaw, 116, sourceConfig.usdcAddress);
 
-        // Bind credit amount/recipient to attested burn message BEFORE mint/credit.
-        // Client-supplied amount was previously trusted, enabling arbitrary credit inflation
-        // (especially on the already-minted path). Also bind on-chain referenceId to
-        // messageHash so the same burn cannot be credited under many fresh referenceIds.
-        const receiverAddress = process.env.CCTP_BASE_RECEIVER_CONTRACT;
-        if (!receiverAddress) throw new Error('CCTP_BASE_RECEIVER_CONTRACT not configured');
+    if (
+      normalizeAddress(decoded.beneficiary) !== normalizeAddress(authenticatedWalletAddress)
+    ) {
+      throw new CctpBeneficiaryForbiddenError();
+    }
 
-        const { beneficiary } = assertAttestedBeneficiary({
-            messageBytes,
-            claimedBeneficiary,
-        });
+    const receiverAddress = process.env.CCTP_BASE_RECEIVER_CONTRACT;
+    if (!receiverAddress) {
+      throw new CctpRelayUnavailableError();
+    }
 
-        const creditMeta = assertCctpCreditRequest({
-            messageBytes,
-            claimedAmount: decoded.amount.toString(),
-            receiverAddress,
-        });
+    const creditMeta = assertCctpCreditRequest({
+      messageBytes,
+      claimedAmount: decoded.amount.toString(),
+      receiverAddress,
+    });
 
-        if (referenceId && referenceId.toLowerCase() !== messageHash.toLowerCase()) {
-            console.warn(
-                `[CCTP Relayer] Ignoring client referenceId ${referenceId}; using messageHash for on-chain idempotency`
-            );
-        }
+    const alreadyOnChain = await destPublicClient.readContract({
+      address: receiverAddress as Hex,
+      abi: RECEIVER_ABI,
+      functionName: 'isReferenceProcessed',
+      args: [messageHash],
+    });
+    if (alreadyOnChain) {
+      const cached = peekCctpNonceRelay(decoded.attestationNonceKey);
+      if (cached) {
+        return { ...cached, status: 'ALREADY_RELAYED', beneficiary: decoded.beneficiary };
+      }
+      return {
+        status: 'ALREADY_RELAYED',
+        mintTx: '',
+        creditTx: '',
+        beneficiary: decoded.beneficiary,
+      };
+    }
 
-        // 3. Poll Iris for Attestation
-        const attestation = await this.pollIrisAttestation(messageHash);
-        console.log(`[CCTP Relayer] Attestation received`);
+    const existing = peekCctpNonceRelay(decoded.attestationNonceKey);
+    if (existing) {
+      return {
+        ...existing,
+        status: 'ALREADY_RELAYED',
+        beneficiary: decoded.beneficiary,
+      };
+    }
 
-        // 4. Mint on Base (Destination)
-        // Use Base Sepolia or Base Mainnet based on env
-        const destNetworkStr = process.env.X402_NETWORK === 'base' ? 'base' : 'base-sepolia';
-        const destChain = destNetworkStr === 'base' ? base : baseSepolia;
-        const destConfig = CCTP_CONFIG[destNetworkStr];
-        const destRpc = process.env[destConfig.rpcUrlEnv];
+    const begin = tryBeginCctpNonceRelay(decoded.attestationNonceKey);
+    if (begin === 'completed') {
+      const done = peekCctpNonceRelay(decoded.attestationNonceKey);
+      if (done) {
+        return { ...done, status: 'ALREADY_RELAYED', beneficiary: decoded.beneficiary };
+      }
+    }
+    if (begin === 'in_flight') {
+      throw new CctpHttpError(409, 'CCTP relay already in progress');
+    }
 
+    try {
+      if (referenceId && referenceId.toLowerCase() !== messageHash.toLowerCase()) {
+        console.warn('[CCTP Relayer] client referenceId ignored for on-chain idempotency');
+      }
+
+      const attestation = await this.pollIrisAttestation(messageHash, networkClass);
+
+      const mintProven = await this.isDestinationMintProven(
+        destPublicClient,
+        destConfig,
+        messageHash
+      );
+
+      let mintTx = '';
+      if (!mintProven) {
         const walletClient = createWalletClient({
-            account: this.relayerAccount,
-            chain: destChain,
-            transport: http(destRpc)
+          account: this.relayerAccount,
+          chain: destChain,
+          transport: http(destRpc),
         });
 
-        let mintTx = '...';
-
-        // Submit receiveMessage
-        try {
-            mintTx = await walletClient.sendTransaction({
-                chain: destChain,
-                to: destConfig.messageTransmitter as `0x${string}`,
-                data: encodeFunctionData({
-                    abi: MESSAGE_TRANSMITTER_ABI,
-                    functionName: 'receiveMessage',
-                    args: [messageBytes, attestation]
-                }),
-            });
-            console.log(`[CCTP Relayer] Mint tx submitted: ${mintTx}`);
-
-        } catch (e: any) {
-            if (e.message?.includes('Nonce') || e.message?.includes('executed')) {
-                console.log('[CCTP Relayer] Message likely already minted, proceeding to credit with attested amount');
-            } else {
-                throw e;
-            }
-        }
-
-        // 5. Credit Receiver using attested burn amount + messageHash idempotency key
-        const creditTx = await walletClient.sendTransaction({
-            chain: destChain,
-            to: receiverAddress as `0x${string}`,
-            data: encodeFunctionData({
-                abi: RECEIVER_ABI,
-                functionName: 'creditFromCctp',
-                args: [
-                    messageHash,
-                    beneficiary as `0x${string}`,
-                    creditMeta.amount
-                ]
-            })
+        mintTx = await walletClient.sendTransaction({
+          chain: destChain,
+          to: destConfig.messageTransmitter as Hex,
+          data: encodeFunctionData({
+            abi: MESSAGE_TRANSMITTER_ABI,
+            functionName: 'receiveMessage',
+            args: [messageBytes, attestation],
+          }),
         });
 
-        console.log(`[CCTP Relayer] Credit applied: ${creditTx}`);
-
-        const result: CctpNonceRelayResult = {
-            status: 'CREDITED',
-            mintTx,
-            creditTx,
-        };
-        recordCctpNonceRelay(decoded.attestationNonceKey, result);
-
-        return {
-            ...result,
-            beneficiary,
-        };
-    }
-
-    private async pollIrisAttestation(messageHash: string): Promise<`0x${string}`> {
-        const irisUrl = process.env.CCTP_IRIS_BASE_URL || 'https://iris-api.circle.com';
-
-        let attempts = 0;
-        while (attempts < 20) { // Poll for ~1-2 mins
-            try {
-                // Circle docs say: GET https://iris-api.circle.com/attestations/{messageHash}
-                const response = await axios.get(`${irisUrl}/attestations/${messageHash}`);
-
-                if (response.data.status === 'complete' && response.data.attestation) {
-                    return response.data.attestation as `0x${string}`;
-                }
-            } catch {
-                // Ignore 404/pending/errors during polling
-            }
-
-            await new Promise(r => setTimeout(r, 5000));
-            attempts++;
+        const mintReceipt = await destPublicClient.waitForTransactionReceipt({ hash: mintTx as Hex });
+        if (mintReceipt.status !== 'success') {
+          throw new CctpValidationError();
         }
-        throw new Error('Attestation timeout');
+
+        const received = parseEventLogs({
+          abi: MESSAGE_TRANSMITTER_ABI,
+          eventName: 'MessageReceived',
+          logs: mintReceipt.logs,
+        });
+        if (received.length === 0) {
+          const provenAfter = await this.isDestinationMintProven(
+            destPublicClient,
+            destConfig,
+            messageHash
+          );
+          if (!provenAfter) {
+            throw new CctpValidationError();
+          }
+        }
+      }
+
+      const walletClient = createWalletClient({
+        account: this.relayerAccount,
+        chain: destChain,
+        transport: http(destRpc),
+      });
+
+      const creditTx = await walletClient.sendTransaction({
+        chain: destChain,
+        to: receiverAddress as Hex,
+        data: encodeFunctionData({
+          abi: RECEIVER_ABI,
+          functionName: 'creditFromCctp',
+          args: [messageHash, decoded.beneficiary, creditMeta.amount],
+        }),
+      });
+
+      const result: CctpNonceRelayResult = {
+        status: 'CREDITED',
+        mintTx,
+        creditTx,
+      };
+      recordCctpNonceRelay(decoded.attestationNonceKey, result);
+
+      return {
+        ...result,
+        beneficiary: decoded.beneficiary,
+      };
+    } catch (error) {
+      clearCctpNonceInFlight(decoded.attestationNonceKey);
+      if (error instanceof CctpHttpError) {
+        throw error;
+      }
+      logSafeError('CCTP Relayer', error);
+      throw new CctpHttpError(500, 'CCTP relay failed');
     }
+  }
+
+  private async isDestinationMintProven(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    destPublicClient: any,
+    destConfig: CctpChainConfig,
+    messageHash: Hex
+  ): Promise<boolean> {
+    try {
+      const used = await destPublicClient.readContract({
+        address: destConfig.messageTransmitter as Hex,
+        abi: MESSAGE_TRANSMITTER_ABI,
+        functionName: 'usedNonces',
+        args: [messageHash],
+      });
+      return Boolean(used);
+    } catch {
+      return false;
+    }
+  }
+
+  private async pollIrisAttestation(
+    messageHash: string,
+    networkClass: CctpNetworkClass
+  ): Promise<Hex> {
+    const irisUrl = getCctpIrisBaseUrl(networkClass);
+
+    let attempts = 0;
+    while (attempts < 20) {
+      try {
+        const response = await axios.get(`${irisUrl}/attestations/${messageHash}`);
+        if (response.data.status === 'complete' && response.data.attestation) {
+          return response.data.attestation as Hex;
+        }
+      } catch {
+        // pending / not found
+      }
+      await new Promise((r) => setTimeout(r, 5000));
+      attempts++;
+    }
+    throw new CctpValidationError();
+  }
 }

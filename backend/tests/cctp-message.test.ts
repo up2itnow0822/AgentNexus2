@@ -84,6 +84,16 @@ describe('CCTP message decoding', () => {
     ).toThrow(/does not match attested messageSender/);
   });
 
+  test('rejects non-V1 CCTP message version', () => {
+    const message = buildV1CctpMessage({
+      amount: 1_000_000n,
+      mintRecipient: receiver,
+      beneficiary,
+    });
+    const mutated = message.replace(/^0x00000000/, '0x00000001');
+    expect(() => decodeCctpBurnMessage(mutated)).toThrow(/Unsupported CCTP message version/);
+  });
+
   test('accepts matching optional claimed beneficiary', () => {
     const message = buildV1CctpMessage({
       amount: 1_000_000n,

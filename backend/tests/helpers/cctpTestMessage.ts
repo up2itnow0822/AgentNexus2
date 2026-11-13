@@ -24,6 +24,7 @@ export function buildV1CctpMessage(params: {
   beneficiary: string;
   nonce?: bigint;
   sourceDomain?: number;
+  burnToken?: string;
 }): `0x${string}` {
   const nonceHex = (params.nonce ?? 1n).toString(16).padStart(16, '0');
   const sourceDomain = params.sourceDomain ?? 3;
@@ -37,9 +38,12 @@ export function buildV1CctpMessage(params: {
     '22'.repeat(32) +
     '00'.repeat(32);
 
+  const burnToken =
+    params.burnToken ?? '0xaf88d065e77c8cC2239327C5EDb3A432268e5831';
+
   const body =
     encodeUint32(0) +
-    encodeAddressAsBytes32('0xaf88d065e77c8cC2239327C5EDb3A432268e5831') +
+    encodeAddressAsBytes32(burnToken) +
     encodeAddressAsBytes32(params.mintRecipient) +
     encodeUint256(params.amount) +
     encodeAddressAsBytes32(params.beneficiary);
