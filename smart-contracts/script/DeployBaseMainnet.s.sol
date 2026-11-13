@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import "forge-std/Script.sol";
 import "../src/AgentNexusEscrow.sol";
 import "../src/AgentNexusEntitlements.sol";
+import "./FeeRecipientLib.sol";
 
 /**
  * @title DeployBaseMainnet
@@ -37,7 +38,8 @@ contract DeployBaseMainnet is Script {
         // Load configuration from environment
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
-        address platformFeeRecipient = vm.envOr("PLATFORM_FEE_RECIPIENT", deployer);
+        address platformFeeRecipient = vm.envAddress("PLATFORM_FEE_RECIPIENT");
+        FeeRecipientLib.validatePlatformFeeRecipient(platformFeeRecipient);
 
         console.log("========================================");
         console.log("AgentNexus Base Mainnet Deployment");

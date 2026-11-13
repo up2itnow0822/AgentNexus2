@@ -4,6 +4,7 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import request from 'supertest';
+import { applyTrustProxySetting } from '../src/config/trustProxy';
 
 describe('Express trust proxy (Railway)', () => {
   /**
@@ -11,8 +12,9 @@ describe('Express trust proxy (Railway)', () => {
    * X-Forwarded-For, not a client-forged left-most entry.
    */
   it('rate-limits on proxy-appended IP when X-Forwarded-For has a forged left entry', async () => {
+    process.env.TRUST_PROXY_HOPS = '1';
     const app = express();
-    app.set('trust proxy', 1);
+    applyTrustProxySetting(app);
 
     const limiter = rateLimit({
       windowMs: 60_000,

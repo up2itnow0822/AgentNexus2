@@ -40,19 +40,47 @@ const getConfig = (): X402MiddlewareConfig => ({
 });
 
 /**
- * Maximum size for X-Payment header (64KB base64 encoded)
+ * Maximum allowed UTF-8 byte length of the X-Payment header value(s).
+ * 8192 bytes — safely below Node's default HTTP max header block (~16KB) so x402
+ * can return 402 PAYMENT_INVALID before Node rejects with 431.
  */
-const MAX_PAYMENT_HEADER_SIZE = 64 * 1024;
+export const MAX_PAYMENT_HEADER_SIZE = 8192;
+
+type XPaymentHeader = string | string[] | undefined;
 
 /**
- * Parse payment payload from X-PAYMENT header
+ * Total UTF-8 byte length of X-Payment (handles duplicate/array header values).
+ */
+export const getXPaymentHeaderByteLength = (header: XPaymentHeader): number => {
+    if (header === undefined) {
+        return 0;
+    }
+    if (Array.isArray(header)) {
+        return header.reduce((sum, part) => sum + Buffer.byteLength(part, 'utf8'), 0);
+    }
+    return Buffer.byteLength(header, 'utf8');
+};
+
+/**
+ * Single header value used for decode (first value when duplicated).
+ */
+export const normalizeXPaymentHeader = (header: XPaymentHeader): string | undefined => {
+    if (header === undefined) {
+        return undefined;
+    }
+    if (Array.isArray(header)) {
+        return header[0];
+    }
+    return header;
+};
+
+/**
+ * Parse payment payload from X-PAYMENT header (call only after byte-length guard in paywall)
  */
 const parsePaymentHeader = (header: string | undefined): X402PaymentPayload | null => {
     if (!header) return null;
 
-    // Guard against oversized headers
-    if (header.length > MAX_PAYMENT_HEADER_SIZE) {
-        console.warn('[X402] Payment header exceeds maximum size');
+    if (Buffer.byteLength(header, 'utf8') > MAX_PAYMENT_HEADER_SIZE) {
         return null;
     }
 
@@ -244,9 +272,18 @@ export const x402Paywall = (priceUsdc: string, description: string) => {
             description,
         };
 
-        // Check for payment header
-        const paymentHeader = req.headers['x-payment'] as string | undefined;
-        const payment = parsePaymentHeader(paymentHeader);
+        // Byte-length guard before any base64 decode, JSON parse, or facilitator/crypto work
+        const rawPaymentHeader = req.headers['x-payment'] as XPaymentHeader;
+
+        if (getXPaymentHeaderByteLength(rawPaymentHeader) > MAX_PAYMENT_HEADER_SIZE) {
+            res.status(402).json({
+                error: 'Payment header exceeds maximum size',
+                code: X402ErrorCode.PAYMENT_INVALID,
+            });
+            return;
+        }
+
+        const payment = parsePaymentHeader(normalizeXPaymentHeader(rawPaymentHeader));
 
         if (!payment) {
             // No payment provided - return 402 Payment Required
