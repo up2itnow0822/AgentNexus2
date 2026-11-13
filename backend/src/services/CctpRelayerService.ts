@@ -31,6 +31,7 @@ import {
 import {
   assertCctpBurnToken,
   assertCctpHeaderDomains,
+  assertCctpHeaderTokenMessengers,
   assertCctpNetworkClassMatch,
   assertMessageTransmitterEmitter,
 } from '../utils/cctpValidation';
@@ -155,6 +156,7 @@ export class CctpRelayerService {
     const messageRaw = hexToBytes(messageBytes);
     assertCctpHeaderDomains(messageRaw, sourceConfig);
     assertCctpBurnToken(messageRaw, 116, sourceConfig.usdcAddress);
+    assertCctpHeaderTokenMessengers(messageRaw, sourceConfig, destConfig);
 
     if (
       normalizeAddress(decoded.beneficiary) !== normalizeAddress(authenticatedWalletAddress)

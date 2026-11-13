@@ -27,6 +27,10 @@ export const BURN_V2_FEE_EXECUTED_OFFSET = 164;
 export const BURN_V1_BODY_LENGTH = 132;
 export const BURN_V2_BODY_LENGTH = 228;
 export const CCTP_HEADER_NONCE_OFFSET = 12;
+/** CCTP V1 message header: sender TokenMessenger (bytes32). */
+export const CCTP_HEADER_SENDER_OFFSET = 20;
+/** CCTP V1 message header: recipient TokenMessenger on destination (bytes32). */
+export const CCTP_HEADER_RECIPIENT_OFFSET = 52;
 
 export interface DecodedCctpBurn {
   messageVersion: number;

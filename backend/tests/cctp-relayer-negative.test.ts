@@ -1,5 +1,9 @@
 import { resetCctpNonceLedgerForTests } from '../src/utils/cctpNonceLedger';
-import { buildV1CctpMessageForChain, buildV1CctpMessageWithTokenChain } from './helpers/cctpTestMessage';
+import {
+  buildV1CctpMessageForChain,
+  buildV1CctpMessageWithTokenChain,
+  v1TokenMessengerBytes32,
+} from './helpers/cctpTestMessage';
 import { encodeMessageReceivedLog, encodeMessageSentLog } from './helpers/cctpTestLogs';
 import type { Hex } from 'viem';
 import { computeCctpUsedNonceKey } from '../src/utils/cctpMessage';
@@ -119,6 +123,120 @@ describe('CctpRelayerService validation negatives', () => {
     ).rejects.toBeInstanceOf(CctpHttpError);
   });
 
+  test('rejects wrong header sender before signing (fresh mint path)', async () => {
+    const message = buildV1CctpMessageForChain('arbitrum-sepolia', {
+      amount: 1n,
+      mintRecipient: receiver,
+      beneficiary,
+      headerSenderAddress: '0x000000000000000000000000000000000000dead',
+    });
+    getTransactionReceipt.mockResolvedValue({
+      logs: [encodeMessageSentLog(sourceCfg, message, `0x${'aa'.repeat(32)}`)],
+    });
+
+    const pollSpy = jest.spyOn(
+      CctpRelayerService.prototype as unknown as { pollIrisAttestation: () => Promise<string> },
+      'pollIrisAttestation'
+    );
+
+    const service = new CctpRelayerService();
+    await expect(
+      service.relayTransfer(`0x${'aa'.repeat(32)}`, sourceCfg.caip2, 'r', beneficiary)
+    ).rejects.toBeInstanceOf(CctpHttpError);
+    expect(sendTransaction).not.toHaveBeenCalled();
+    expect(pollSpy).not.toHaveBeenCalled();
+  });
+
+  test('rejects wrong header recipient before signing (fresh mint path)', async () => {
+    const message = buildV1CctpMessageForChain('arbitrum-sepolia', {
+      amount: 1n,
+      mintRecipient: receiver,
+      beneficiary,
+      headerRecipientAddress: '0x000000000000000000000000000000000000beef',
+    });
+    getTransactionReceipt.mockResolvedValue({
+      logs: [encodeMessageSentLog(sourceCfg, message, `0x${'aa'.repeat(32)}`)],
+    });
+
+    const pollSpy = jest.spyOn(
+      CctpRelayerService.prototype as unknown as { pollIrisAttestation: () => Promise<string> },
+      'pollIrisAttestation'
+    );
+
+    const service = new CctpRelayerService();
+    await expect(
+      service.relayTransfer(`0x${'aa'.repeat(32)}`, sourceCfg.caip2, 'r', beneficiary)
+    ).rejects.toBeInstanceOf(CctpHttpError);
+    expect(sendTransaction).not.toHaveBeenCalled();
+    expect(pollSpy).not.toHaveBeenCalled();
+  });
+
+  test('rejects wrong header sender when destination nonce already used', async () => {
+    const nonce = 77n;
+    const message = buildV1CctpMessageForChain('arbitrum-sepolia', {
+      amount: 1n,
+      mintRecipient: receiver,
+      beneficiary,
+      nonce,
+      headerSenderAddress: '0x000000000000000000000000000000000000dead',
+    });
+    getTransactionReceipt.mockResolvedValue({
+      logs: [encodeMessageSentLog(sourceCfg, message, `0x${'aa'.repeat(32)}`)],
+    });
+
+    const nonceKey = computeCctpUsedNonceKey(sourceCfg.cctpDomain, nonce);
+    readContract.mockImplementation(({ functionName, args }: { functionName: string; args: unknown[] }) => {
+      if (functionName === 'isReferenceProcessed') return false;
+      if (functionName === 'usedNonces' && args[0] === nonceKey) return 1n;
+      return 0n;
+    });
+
+    const pollSpy = jest.spyOn(
+      CctpRelayerService.prototype as unknown as { pollIrisAttestation: () => Promise<string> },
+      'pollIrisAttestation'
+    );
+
+    const service = new CctpRelayerService();
+    await expect(
+      service.relayTransfer(`0x${'aa'.repeat(32)}`, sourceCfg.caip2, 'r', beneficiary)
+    ).rejects.toBeInstanceOf(CctpHttpError);
+    expect(sendTransaction).not.toHaveBeenCalled();
+    expect(pollSpy).not.toHaveBeenCalled();
+  });
+
+  test('rejects wrong header recipient when destination nonce already used', async () => {
+    const nonce = 78n;
+    const message = buildV1CctpMessageForChain('arbitrum-sepolia', {
+      amount: 1n,
+      mintRecipient: receiver,
+      beneficiary,
+      nonce,
+      headerRecipientAddress: '0x000000000000000000000000000000000000beef',
+    });
+    getTransactionReceipt.mockResolvedValue({
+      logs: [encodeMessageSentLog(sourceCfg, message, `0x${'aa'.repeat(32)}`)],
+    });
+
+    const nonceKey = computeCctpUsedNonceKey(sourceCfg.cctpDomain, nonce);
+    readContract.mockImplementation(({ functionName, args }: { functionName: string; args: unknown[] }) => {
+      if (functionName === 'isReferenceProcessed') return false;
+      if (functionName === 'usedNonces' && args[0] === nonceKey) return 1n;
+      return 0n;
+    });
+
+    const pollSpy = jest.spyOn(
+      CctpRelayerService.prototype as unknown as { pollIrisAttestation: () => Promise<string> },
+      'pollIrisAttestation'
+    );
+
+    const service = new CctpRelayerService();
+    await expect(
+      service.relayTransfer(`0x${'aa'.repeat(32)}`, sourceCfg.caip2, 'r', beneficiary)
+    ).rejects.toBeInstanceOf(CctpHttpError);
+    expect(sendTransaction).not.toHaveBeenCalled();
+    expect(pollSpy).not.toHaveBeenCalled();
+  });
+
   test('does not mark credited when mint receipt fails proof', async () => {
     const message = buildV1CctpMessageForChain('arbitrum-sepolia', {
       amount: 1n,
@@ -183,7 +301,7 @@ describe('CctpRelayerService mainnet configuration path', () => {
               caller: '0x0000000000000000000000000000000000000001',
               sourceDomain: CCTP_CONFIG.arbitrum.cctpDomain,
               nonce: 1n,
-              sender: `0x${'11'.repeat(32)}`,
+              sender: v1TokenMessengerBytes32('arbitrum'),
               messageBody: '0x',
               transmitter: CCTP_CONFIG.base.messageTransmitter as Hex,
             }),

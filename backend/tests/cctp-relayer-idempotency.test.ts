@@ -1,6 +1,7 @@
 import { resetCctpNonceLedgerForTests } from '../src/utils/cctpNonceLedger';
 import {
   buildV1CctpMessageForChain,
+  v1TokenMessengerBytes32,
 } from './helpers/cctpTestMessage';
 import { encodeMessageReceivedLog, encodeMessageSentLog } from './helpers/cctpTestLogs';
 import { computeCctpUsedNonceKey } from '../src/utils/cctpMessage';
@@ -96,7 +97,7 @@ describe('CctpRelayerService mint proof and idempotency', () => {
               caller: '0x0000000000000000000000000000000000000001',
               sourceDomain: sourceCfg.cctpDomain,
               nonce: 42n,
-              sender: `0x${'11'.repeat(32)}`,
+              sender: v1TokenMessengerBytes32('arbitrum-sepolia'),
               messageBody: '0x',
               transmitter: destCfg.messageTransmitter as Hex,
             }),

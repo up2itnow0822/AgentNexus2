@@ -14,7 +14,7 @@ function encodeUint256(value: bigint): string {
   return value.toString(16).padStart(64, '0');
 }
 
-function encodeAddressAsBytes32(address: string): string {
+export function encodeAddressAsBytes32(address: string): string {
   const hex = address.toLowerCase().replace(/^0x/, '');
   if (hex.length !== 40) throw new Error('expected 20-byte address');
   return hex.padStart(64, '0');
@@ -22,6 +22,17 @@ function encodeAddressAsBytes32(address: string): string {
 
 function usdcBytes32ForConfig(cfg: CctpChainConfig): string {
   return encodeAddressAsBytes32(cfg.usdcAddress);
+}
+
+function defaultDestinationKey(
+  chainKey: CctpConfigKey,
+  destinationDomain: number
+): CctpConfigKey {
+  const isMainnet = CCTP_CONFIG[chainKey].networkClass === 'mainnet';
+  if (destinationDomain !== 6) {
+    return isMainnet ? 'base' : 'base-sepolia';
+  }
+  return isMainnet ? 'base' : 'base-sepolia';
 }
 
 /** Minimal CCTP V1 MessageSent payload using chain config (no inline token literals in callers). */
@@ -33,18 +44,34 @@ export function buildV1CctpMessageForChain(
     beneficiary: string;
     nonce?: bigint;
     destinationDomain?: number;
+    destinationChainKey?: CctpConfigKey;
+    /** Override header sender (default: source v1TokenMessenger). */
+    headerSenderAddress?: string;
+    /** Override header recipient (default: dest v1TokenMessenger). */
+    headerRecipientAddress?: string;
   }
 ): `0x${string}` {
   const cfg = CCTP_CONFIG[chainKey];
+  const destDomain = params.destinationDomain ?? 6;
+  const destKey =
+    params.destinationChainKey ?? defaultDestinationKey(chainKey, destDomain);
+  const destCfg = CCTP_CONFIG[destKey];
   const nonceHex = (params.nonce ?? 1n).toString(16).padStart(16, '0');
+
+  const headerSender = encodeAddressAsBytes32(
+    params.headerSenderAddress ?? cfg.v1TokenMessenger
+  );
+  const headerRecipient = encodeAddressAsBytes32(
+    params.headerRecipientAddress ?? destCfg.v1TokenMessenger
+  );
 
   const header =
     encodeUint32(0) +
     encodeUint32(cfg.cctpDomain) +
-    encodeUint32(params.destinationDomain ?? 6) +
+    encodeUint32(destDomain) +
     nonceHex +
-    '11'.repeat(32) +
-    '22'.repeat(32) +
+    headerSender +
+    headerRecipient +
     '00'.repeat(32);
 
   const body =
@@ -74,6 +101,7 @@ export function buildV1CctpMessageWithTokenChain(
 ): `0x${string}` {
   const headerCfg = CCTP_CONFIG[headerChainKey];
   const tokenCfg = CCTP_CONFIG[tokenChainKey];
+  const destCfg = CCTP_CONFIG[defaultDestinationKey(headerChainKey, 6)];
   const nonceHex = (params.nonce ?? 1n).toString(16).padStart(16, '0');
 
   const header =
@@ -81,8 +109,8 @@ export function buildV1CctpMessageWithTokenChain(
     encodeUint32(headerCfg.cctpDomain) +
     encodeUint32(6) +
     nonceHex +
-    '11'.repeat(32) +
-    '22'.repeat(32) +
+    encodeAddressAsBytes32(headerCfg.v1TokenMessenger) +
+    encodeAddressAsBytes32(destCfg.v1TokenMessenger) +
     '00'.repeat(32);
 
   const body =
@@ -94,4 +122,8 @@ export function buildV1CctpMessageWithTokenChain(
 
   const hex = header + body;
   return `0x${hex}`;
+}
+
+export function v1TokenMessengerBytes32(chainKey: CctpConfigKey): `0x${string}` {
+  return `0x${encodeAddressAsBytes32(CCTP_CONFIG[chainKey].v1TokenMessenger)}`;
 }

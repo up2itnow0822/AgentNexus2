@@ -1,6 +1,10 @@
 import type { CctpChainConfig } from '../config/cctp';
-import { CCTP_BASE_DOMAIN_ID } from './cctpMessage';
-import { normalizeAddress } from './cctpMessage';
+import {
+  CCTP_BASE_DOMAIN_ID,
+  CCTP_HEADER_RECIPIENT_OFFSET,
+  CCTP_HEADER_SENDER_OFFSET,
+  normalizeAddress,
+} from './cctpMessage';
 import { CctpValidationError } from './cctpErrors';
 import type { Log } from 'viem';
 
@@ -45,6 +49,22 @@ export function assertCctpBurnToken(
 ): void {
   const burnToken = readAddressFromBytes32(bytes, bodyOffset + BURN_BURN_TOKEN_OFFSET);
   if (normalizeAddress(burnToken) !== normalizeAddress(usdcAddress)) {
+    throw new CctpValidationError();
+  }
+}
+
+/** Require attested message header sender/recipient TokenMessengers (V1, bytes32). */
+export function assertCctpHeaderTokenMessengers(
+  bytes: Uint8Array,
+  sourceConfig: CctpChainConfig,
+  destConfig: CctpChainConfig
+): void {
+  const sender = readAddressFromBytes32(bytes, CCTP_HEADER_SENDER_OFFSET);
+  const recipient = readAddressFromBytes32(bytes, CCTP_HEADER_RECIPIENT_OFFSET);
+  if (normalizeAddress(sender) !== normalizeAddress(sourceConfig.v1TokenMessenger)) {
+    throw new CctpValidationError();
+  }
+  if (normalizeAddress(recipient) !== normalizeAddress(destConfig.v1TokenMessenger)) {
     throw new CctpValidationError();
   }
 }
