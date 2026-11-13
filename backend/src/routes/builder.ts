@@ -9,9 +9,9 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { AgentGeneratorService } from '../services/AgentGeneratorService';
+import { AgentGeneratorService } from '../services/AgentGeneratorService.js';
 import { AgentCategory, BuildMethod } from '@prisma/client';
-import { authenticate } from '../middleware/auth';
+import { authenticate } from '../middleware/auth.js';
 
 const router: Router = Router();
 const generatorService = new AgentGeneratorService();

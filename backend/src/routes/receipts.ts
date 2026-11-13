@@ -9,7 +9,7 @@
 import { Router, Request, Response } from 'express';
 import type { Router as RouterType } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { ReceiptService } from '../services/ReceiptService';
+import { ReceiptService } from '../services/ReceiptService.js';
 
 const router: RouterType = Router();
 const prisma = new PrismaClient();
