@@ -31,9 +31,8 @@ export const analytics = new AnalyticsService(prisma);
 const app: Application = express();
 const httpServer = createServer(app);
 
-// Railway terminates TLS and forwards one HTTP hop; trust proxy count 1 so
-// express-rate-limit and req.ip use the client from X-Forwarded-For, not the edge IP.
-app.set('trust proxy', 1);
+import { applyTrustProxySetting } from './config/trustProxy.js';
+applyTrustProxySetting(app);
 
 // Configuration
 const PORT = process.env.PORT || 8200;

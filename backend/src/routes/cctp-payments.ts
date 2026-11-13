@@ -18,8 +18,8 @@ const relayerService = new CctpRelayerService();
 
 router.post(
   '/submit',
-  authenticate,
   cctpSubmitIpRateLimit,
+  authenticate,
   cctpSubmitUserRateLimit,
   async (req: Request, res: Response) => {
     try {

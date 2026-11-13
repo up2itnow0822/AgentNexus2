@@ -29,7 +29,7 @@ export class CctpRelayUnavailableError extends CctpHttpError {
 }
 
 export class CctpRateLimitError extends CctpHttpError {
-  constructor(message = 'Too many CCTP submit requests; try again later') {
+  constructor(message = 'Too many requests; try again later') {
     super(429, message);
   }
 }

@@ -68,12 +68,18 @@ export function createCctpSubmitUserRateLimit(
   });
 }
 
+function cctpSubmitIpKey(req: Request): string {
+  // Key only on Express-derived req.ip (honors trust proxy); never parse X-Forwarded-For here.
+  return req.ip ?? 'unknown';
+}
+
 export function createCctpSubmitIpRateLimit(
   overrides?: Partial<Options>
 ): RateLimitRequestHandler {
   const cfg = getCctpSubmitRateLimitConfig();
   return rateLimit({
     ...baseRateLimitOptions(cfg.windowMs, cfg.maxPerIp),
+    keyGenerator: (req) => cctpSubmitIpKey(req),
     ...overrides,
   });
 }
