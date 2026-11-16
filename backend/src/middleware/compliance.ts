@@ -12,7 +12,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { complianceConfig, ComplianceConfig } from '../config/compliance';
+import { complianceConfig, ComplianceConfig } from '../config/compliance.js';
 
 export interface ComplianceContext {
     country?: string;

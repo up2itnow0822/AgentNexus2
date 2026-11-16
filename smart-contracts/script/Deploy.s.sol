@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import "forge-std/Script.sol";
 import "../src/AgentNexusEscrow.sol";
 import "../src/AgentNexusEntitlements.sol";
+import "./FeeRecipientLib.sol";
 
 /**
  * @title DeployScript
@@ -22,7 +23,7 @@ contract DeployScript is Script {
         
         // Get fee recipient from environment
         address platformFeeRecipient = vm.envAddress("PLATFORM_FEE_RECIPIENT");
-        require(platformFeeRecipient != address(0), "PLATFORM_FEE_RECIPIENT not set");
+        FeeRecipientLib.validatePlatformFeeRecipient(platformFeeRecipient);
         
         console.log("Deploying contracts with address:", deployer);
         console.log("Deployer balance:", deployer.balance);
@@ -82,22 +83,24 @@ contract DeployScript is Script {
  * @notice Deployment script for Base Sepolia testnet with mock tokens
  */
 contract TestnetDeployScript is Script {
-    address public constant PLATFORM_FEE_RECIPIENT = 0x742d35cC6634c0532925A3b844bc9E7595F0beB1; // Replace
     uint256 public constant PLATFORM_FEE_BPS = 250; // 2.5%
     string public constant BASE_URI = "https://testnet-api.agentnexus.io/metadata/";
     
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
+        address platformFeeRecipient = vm.envAddress("PLATFORM_FEE_RECIPIENT");
+        FeeRecipientLib.validatePlatformFeeRecipient(platformFeeRecipient);
         
         console.log("Deploying to Base Sepolia testnet");
         console.log("Deployer:", deployer);
+        console.log("Platform Fee Recipient:", platformFeeRecipient);
         
         vm.startBroadcast(deployerPrivateKey);
         
         // Deploy contracts
         AgentNexusEscrow escrow = new AgentNexusEscrow(
-            PLATFORM_FEE_RECIPIENT,
+            platformFeeRecipient,
             PLATFORM_FEE_BPS
         );
         

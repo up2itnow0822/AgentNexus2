@@ -138,7 +138,7 @@ trivy image agentnexus-python-echo:v1
 
 ### Minimal Base Images
 - Python: Use `python:3.11-alpine` (not `python:3.11`)
-- Node.js: Use `node:20-alpine` (not `node:20`)
+- Node.js: Use `node:24-alpine` (digest-pinned patch tag, not floating `node:24`)
 - Shell: Use `alpine:3.19` (not `ubuntu`)
 
 ### Security Checklist

@@ -6,11 +6,45 @@
  * @author AgentNexus Team (Phase 6A: Integration Testing)
  */
 
+import { createServer, type Server } from 'http';
 import WebSocket from 'ws';
+import { webSocketService } from '../../src/services/WebSocketService.js';
 
-const WS_URL = process.env.WS_URL || 'ws://localhost:3001/ws';
+let httpServer: Server;
+let wsBaseUrl = 'ws://127.0.0.1:0';
 
-describe.skip('WebSocket Integration', () => {
+function wsUrl(path: string = '/ws'): string {
+  return `${wsBaseUrl}${path}`;
+}
+
+/** Fail-safe timer; call the returned function when the test finishes successfully. */
+function failSafeTimer(ms: number, onFire: () => void): () => void {
+  const id = setTimeout(onFire, ms);
+  return () => clearTimeout(id);
+}
+
+beforeAll((done) => {
+  process.env.NODE_ENV = 'test';
+  httpServer = createServer((_req, res) => {
+    res.writeHead(404);
+    res.end();
+  });
+  webSocketService.initialize(httpServer, '/ws');
+  httpServer.listen(0, '127.0.0.1', () => {
+    const addr = httpServer.address();
+    if (addr && typeof addr === 'object') {
+      wsBaseUrl = `ws://127.0.0.1:${addr.port}`;
+    }
+    done();
+  });
+});
+
+afterAll((done) => {
+  webSocketService.shutdown();
+  httpServer.close(() => done());
+});
+
+describe('WebSocket Integration', () => {
 
   let ws: WebSocket.WebSocket;
 
@@ -21,7 +55,7 @@ describe.skip('WebSocket Integration', () => {
   });
 
   test('should establish WebSocket connection', (done) => {
-    ws = new WebSocket(WS_URL);
+    ws = new WebSocket(wsUrl());
 
     ws.on('open', () => {
       expect(ws.readyState).toBe(WebSocket.OPEN);
@@ -34,7 +68,7 @@ describe.skip('WebSocket Integration', () => {
   }, 10000);
 
   test('should receive welcome message on connection', (done) => {
-    ws = new WebSocket(WS_URL);
+    ws = new WebSocket(wsUrl());
 
     ws.on('message', (data) => {
       const message = JSON.parse(data.toString());
@@ -51,8 +85,13 @@ describe.skip('WebSocket Integration', () => {
   }, 10000);
 
   test('should handle subscribe message', (done) => {
-    ws = new WebSocket(WS_URL);
+    ws = new WebSocket(wsUrl());
     let receivedSubscribeConfirmation = false;
+    const clearFailSafe = failSafeTimer(5000, () => {
+      if (!receivedSubscribeConfirmation) {
+        done(new Error('Did not receive subscribe confirmation'));
+      }
+    });
 
     ws.on('open', () => {
       ws.send(JSON.stringify({
@@ -67,23 +106,19 @@ describe.skip('WebSocket Integration', () => {
       if (message.type === 'status' && message.data?.message?.includes('Subscribed')) {
         receivedSubscribeConfirmation = true;
         expect(receivedSubscribeConfirmation).toBe(true);
+        clearFailSafe();
         done();
       }
     });
 
     ws.on('error', (error) => {
+      clearFailSafe();
       done(error);
     });
-
-    setTimeout(() => {
-      if (!receivedSubscribeConfirmation) {
-        done(new Error('Did not receive subscribe confirmation'));
-      }
-    }, 5000);
   }, 10000);
 
   test('should handle unsubscribe message', (done) => {
-    ws = new WebSocket(WS_URL);
+    ws = new WebSocket(wsUrl());
 
     ws.on('open', () => {
       // Subscribe first
@@ -112,8 +147,13 @@ describe.skip('WebSocket Integration', () => {
   }, 10000);
 
   test('should respond to ping with pong', (done) => {
-    ws = new WebSocket(WS_URL);
+    ws = new WebSocket(wsUrl());
     let receivedPong = false;
+    const clearFailSafe = failSafeTimer(5000, () => {
+      if (!receivedPong) {
+        done(new Error('Did not receive pong'));
+      }
+    });
 
     ws.on('open', () => {
       ws.send(JSON.stringify({
@@ -127,24 +167,25 @@ describe.skip('WebSocket Integration', () => {
       if (message.type === 'pong') {
         receivedPong = true;
         expect(receivedPong).toBe(true);
+        clearFailSafe();
         done();
       }
     });
 
     ws.on('error', (error) => {
+      clearFailSafe();
       done(error);
     });
-
-    setTimeout(() => {
-      if (!receivedPong) {
-        done(new Error('Did not receive pong'));
-      }
-    }, 5000);
   }, 10000);
 
   test('should handle multiple messages', (done) => {
-    ws = new WebSocket(WS_URL);
+    ws = new WebSocket(wsUrl());
     const messages: any[] = [];
+    const clearFailSafe = failSafeTimer(5000, () => {
+      if (messages.length < 2) {
+        done(new Error(`Only received ${messages.length} messages`));
+      }
+    });
 
     ws.on('open', () => {
       ws.send(JSON.stringify({ type: 'ping' }));
@@ -163,23 +204,19 @@ describe.skip('WebSocket Integration', () => {
 
       if (messages.length >= 2) {
         expect(messages.length).toBeGreaterThanOrEqual(2);
+        clearFailSafe();
         done();
       }
     });
 
     ws.on('error', (error) => {
+      clearFailSafe();
       done(error);
     });
-
-    setTimeout(() => {
-      if (messages.length < 2) {
-        done(new Error(`Only received ${messages.length} messages`));
-      }
-    }, 5000);
   }, 10000);
 
   test('should handle connection close gracefully', (done) => {
-    ws = new WebSocket(WS_URL);
+    ws = new WebSocket(wsUrl());
 
     ws.on('open', () => {
       ws.close();
@@ -196,7 +233,7 @@ describe.skip('WebSocket Integration', () => {
   }, 10000);
 
   test('should validate message format', (done) => {
-    ws = new WebSocket(WS_URL);
+    ws = new WebSocket(wsUrl());
 
     ws.on('message', (data) => {
       const message = JSON.parse(data.toString());
@@ -216,7 +253,7 @@ describe.skip('WebSocket Integration', () => {
   }, 10000);
 
   test('should handle invalid message format', (done) => {
-    ws = new WebSocket(WS_URL);
+    ws = new WebSocket(wsUrl());
 
     ws.on('open', () => {
       // Send invalid JSON
@@ -236,7 +273,7 @@ describe.skip('WebSocket Integration', () => {
   }, 10000);
 
   test('should handle rapid messages', (done) => {
-    ws = new WebSocket(WS_URL);
+    ws = new WebSocket(wsUrl());
 
     ws.on('open', () => {
       // Send multiple rapid messages
@@ -260,7 +297,7 @@ describe.skip('WebSocket Integration', () => {
   }, 10000);
 });
 
-describe.skip('WebSocket Message Broadcasting', () => {
+describe('WebSocket Message Broadcasting', () => {
 
   let ws1: WebSocket.WebSocket;
   let ws2: WebSocket.WebSocket;
@@ -278,8 +315,8 @@ describe.skip('WebSocket Message Broadcasting', () => {
     let ws1Connected = false;
     let ws2Connected = false;
 
-    ws1 = new WebSocket(WS_URL);
-    ws2 = new WebSocket(WS_URL);
+    ws1 = new WebSocket(wsUrl());
+    ws2 = new WebSocket(wsUrl());
 
     ws1.on('open', () => {
       ws1Connected = true;
@@ -307,8 +344,8 @@ describe.skip('WebSocket Message Broadcasting', () => {
     const executionId = `test_execution_${Date.now()}`;
     // Variables removed to fix lint error
 
-    ws1 = new WebSocket(WS_URL);
-    ws2 = new WebSocket(WS_URL);
+    ws1 = new WebSocket(wsUrl());
+    ws2 = new WebSocket(wsUrl());
 
     let ws1Ready = false;
     let ws2Ready = false;
@@ -349,43 +386,51 @@ describe.skip('WebSocket Message Broadcasting', () => {
   }, 15000);
 });
 
-describe.skip('WebSocket Error Handling', () => {
+describe('WebSocket Error Handling', () => {
 
   test('should handle connection to wrong path', (done) => {
-    const ws = new WebSocket('ws://localhost:3001/invalid-path');
+    const ws = new WebSocket(wsUrl('/invalid-path'));
+    let finished = false;
+    const finish = (fn: () => void) => {
+      if (finished) return;
+      finished = true;
+      clearFailSafe();
+      fn();
+    };
+    const clearFailSafe = failSafeTimer(3000, () => {
+      if (ws.readyState !== WebSocket.OPEN && ws.readyState !== WebSocket.CLOSED) {
+        finish(() => done());
+      }
+    });
 
     ws.on('error', () => {
-      // Error is expected
       expect(true).toBe(true);
-      done();
+      finish(() => done());
     });
 
     ws.on('open', () => {
-      // If it opens, just close it
       ws.close();
-      done();
+      finish(() => done());
     });
-
-    setTimeout(() => {
-      if (ws.readyState !== WebSocket.OPEN && ws.readyState !== WebSocket.CLOSED) {
-        done();
-      }
-    }, 3000);
   }, 10000);
 
   test('should handle connection timeout', (done) => {
-    // Try to connect to non-existent server
     const ws = new WebSocket('ws://invalid-host:9999/ws');
-
-    ws.on('error', () => {
-      // Error is expected
-      expect(true).toBe(true);
-      done();
+    let finished = false;
+    const finish = (fn: () => void) => {
+      if (finished) return;
+      finished = true;
+      clearFailSafe();
+      fn();
+    };
+    const clearFailSafe = failSafeTimer(3000, () => {
+      finish(() => done());
     });
 
-    setTimeout(() => {
-      done();
-    }, 3000);
+    ws.on('error', () => {
+      expect(true).toBe(true);
+      finish(() => done());
+    });
   }, 10000);
 });
 

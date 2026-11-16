@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
-import { VectorMemory } from '../memory/VectorMemory';
-import { AgentZeroAdapter } from './AgentZeroAdapter';
-import { WalletService } from '../WalletService';
+import { VectorMemory } from '../memory/VectorMemory.js';
+import { AgentZeroAdapter } from './AgentZeroAdapter.js';
+import { WalletService } from '../WalletService.js';
 
 interface Tool {
     name: string;

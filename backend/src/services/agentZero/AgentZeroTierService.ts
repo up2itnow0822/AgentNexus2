@@ -9,8 +9,8 @@ import {
   TierVerificationResult, 
   RateLimitInfo,
   AgentZeroConfig 
-} from '../../types/agentZero';
-import { WalletService } from '../WalletService';
+} from '../../types/agentZero.js';
+import { WalletService } from '../WalletService.js';
 
 export class AgentZeroTierService {
   private prisma: PrismaClient;

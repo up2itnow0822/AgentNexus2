@@ -17,7 +17,7 @@ import {
     X402PaymentRequest,
     X402PaymentPayload,
     USDC_ADDRESSES,
-} from '../types/x402-types';
+} from '../types/x402-types.js';
 
 // ERC20 transfer ABI fragment
 const ERC20_TRANSFER_ABI = [

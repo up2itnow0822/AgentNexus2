@@ -1,7 +1,7 @@
-import { AgentZeroTierService } from '../AgentZeroTierService';
+import { AgentZeroTierService } from '../AgentZeroTierService.js';
 import { PrismaClient, AgentZeroTier } from '@prisma/client';
-import { WalletService } from '../../WalletService';
-import { AgentZeroConfig } from '../../../types/agentZero';
+import { WalletService } from '../../WalletService.js';
+import { AgentZeroConfig } from '../../../types/agentZero.js';
 // import { keccak256, toHex, toBytes } from 'viem';
 
 // Mock dependencies

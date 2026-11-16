@@ -12,7 +12,7 @@
 
 import { PrismaClient, Execution, Agent } from '@prisma/client';
 import Docker from 'dockerode';
-import path from 'path';
+import { agentRuntimeSeccompPath } from '../utils/runtimePaths.js';
 import {
   ExecuteAgentDto,
   ExecutionLog,
@@ -20,22 +20,22 @@ import {
   ValidationError,
   NotFoundError,
   ForbiddenError
-} from '../types';
-import { AgentService } from './AgentService';
+} from '../types/index.js';
+import { AgentService } from './AgentService.js';
 import {
   sanitizeInput,
   sanitizeLogs,
   detectInjection,
   createSafeSummary
-} from '../utils/sanitization';
-import { webSocketService } from './WebSocketService';
-import { metricsService } from './MetricsService';
-import { AgentAdapter, AgentExecutionRequest } from '../types/agent';
-import { AgentZeroAdapter } from './agentZero/AgentZeroAdapter';
-import { AgentZeroTierService } from './agentZero/AgentZeroTierService';
-import { WalletService } from './WalletService';
-import { agentZeroConfig } from '../config/agentZero';
-import { ElizaAgentService } from './eliza/ElizaAgentService';
+} from '../utils/sanitization.js';
+import { webSocketService } from './WebSocketService.js';
+import { metricsService } from './MetricsService.js';
+import { AgentAdapter, AgentExecutionRequest } from '../types/agent.js';
+import { AgentZeroAdapter } from './agentZero/AgentZeroAdapter.js';
+import { AgentZeroTierService } from './agentZero/AgentZeroTierService.js';
+import { WalletService } from './WalletService.js';
+import { agentZeroConfig } from '../config/agentZero.js';
+import { ElizaAgentService } from './eliza/ElizaAgentService.js';
 
 export class ExecutionService {
   private docker: Docker | null = null;
@@ -360,7 +360,7 @@ export class ExecutionService {
           // LINUX SECURITY
           SecurityOpt: [
             'no-new-privileges:true',                // Prevent privilege escalation
-            `seccomp=${path.join(__dirname, '../../../agent-runtime/security/seccomp-profile.json')}`
+            `seccomp=${agentRuntimeSeccompPath()}`
           ],
           CapDrop: ['ALL'],                          // Drop all Linux capabilities
 

@@ -45,6 +45,10 @@ if [ -z "$PRIVATE_KEY" ]; then
     exit 1
 fi
 
+# shellcheck source=validate-fee-recipient.sh
+source "$SCRIPT_DIR/validate-fee-recipient.sh"
+validate_platform_fee_recipient "${PLATFORM_FEE_RECIPIENT:-}"
+
 if [ -z "$BASE_SEPOLIA_RPC" ]; then
     echo -e "${YELLOW}⚠ Warning: BASE_SEPOLIA_RPC not set, using default${NC}"
     BASE_SEPOLIA_RPC="https://sepolia.base.org"
@@ -69,6 +73,7 @@ echo -e "  Network:           ${YELLOW}Base Sepolia${NC}"
 echo -e "  Chain ID:          ${YELLOW}84532${NC}"
 echo -e "  RPC URL:           ${YELLOW}$BASE_SEPOLIA_RPC${NC}"
 echo -e "  Deployer Address:  ${YELLOW}$DEPLOYER${NC}"
+echo -e "  Fee Recipient:     ${YELLOW}$PLATFORM_FEE_RECIPIENT${NC}"
 echo ""
 
 # Check deployer balance
@@ -189,7 +194,7 @@ else
 - **Address:** \`$ESCROW_ADDRESS\`
 - **Basescan:** https://sepolia.basescan.org/address/$ESCROW_ADDRESS
 - **Platform Fee:** 2.5% (250 bps)
-- **Fee Recipient:** \`0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1\`
+- **Fee Recipient:** \`$PLATFORM_FEE_RECIPIENT\`
 
 ### AgentNexusEntitlements
 - **Address:** \`$ENTITLEMENTS_ADDRESS\`

@@ -70,7 +70,7 @@ import {
   NotFoundError,
   ValidationError,
   ConflictError
-} from '../types';
+} from '../types/index.js';
 
 /**
  * Service for managing AI agents in the marketplace

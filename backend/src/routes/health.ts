@@ -14,8 +14,8 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import Docker from 'dockerode';
-import { metricsService } from '../services/MetricsService';
-import { webSocketService } from '../services/WebSocketService';
+import { metricsService } from '../services/MetricsService.js';
+import { webSocketService } from '../services/WebSocketService.js';
 
 const router: Router = Router();
 

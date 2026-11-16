@@ -24,7 +24,7 @@ import {
 } from 'viem';
 import { base, baseSepolia, arbitrum, polygon, optimism, bsc, avalanche, mainnet } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
-import { BlockchainError } from '../types';
+import { BlockchainError } from '../types/index.js';
 
 /**
  * Chain registry mapping chain IDs to chain configs and RPC env vars

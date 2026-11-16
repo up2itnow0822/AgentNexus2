@@ -1,12 +1,13 @@
 # AgentNexus Frontend Dockerfile
 # Multi-stage build for Next.js application
 
-FROM node:20-alpine AS base
+# node:24.22.3-alpine
+FROM node:24.22.3-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5 AS base
 
 # Install build tooling needed by native dependencies during pnpm install
 RUN apk add --no-cache python3 make g++ linux-headers libusb-dev eudev-dev
 
-# Install pnpm
+# Install pnpm (matches lockfileVersion 9.x)
 RUN npm install -g pnpm@9.15.9
 
 # Set working directory
@@ -27,7 +28,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm run build
 
 # Production stage
-FROM node:20-alpine AS runner
+# node:24.22.3-alpine
+FROM node:24.22.3-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5 AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

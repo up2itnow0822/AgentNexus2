@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import "forge-std/Script.sol";
 import "../src/AgentNexusEntitlements.sol";
 import "../src/AgentNexusEscrow.sol";
+import "./FeeRecipientLib.sol";
 
 /**
  * @title DeployMultiChain
@@ -37,6 +38,7 @@ contract DeployMultiChain is Script {
         // Load deployer private key
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address platformFeeRecipient = vm.envAddress("PLATFORM_FEE_RECIPIENT");
+        FeeRecipientLib.validatePlatformFeeRecipient(platformFeeRecipient);
         
         // Start broadcast for transaction submission
         vm.startBroadcast(deployerPrivateKey);

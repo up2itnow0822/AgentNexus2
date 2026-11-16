@@ -15,14 +15,14 @@ import {
   stringToBytes
 } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
-import entitlementsAbi from '../contracts/AgentNexusEntitlements.json';
+import entitlementsAbi from '../contracts/AgentNexusEntitlements.json' with { type: 'json' };
 import {
   createPublicViemClient,
   createWalletViemClient,
   getContractAddresses,
   getRpcUrl,
   isValidAddress
-} from '../utils/blockchain';
+} from '../utils/blockchain.js';
 
 export interface AlchemyAAConfig {
   apiKey: string;

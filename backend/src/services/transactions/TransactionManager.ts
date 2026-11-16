@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
 import { ethers } from 'ethers';
-import { AP2Service } from './AP2Service';
+import { AP2Service } from './AP2Service.js';
 
 export class TransactionManager {
     private prisma: PrismaClient;

@@ -8,10 +8,10 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { prisma } from '../index';
+import { prisma } from '../index.js';
 import { AgentCategory, AgentStatus } from '@prisma/client';
-import { authenticate } from '../middleware/auth';
-import { x402Paywall, x402Enabled } from '../middleware/x402';
+import { authenticate } from '../middleware/auth.js';
+import { x402Paywall, x402Enabled } from '../middleware/x402.js';
 
 const router: Router = Router();
 

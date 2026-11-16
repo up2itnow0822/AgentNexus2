@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { SocialBotService } from '../services/social/SocialBotService';
-import { ExecutionService } from '../services/ExecutionService';
-import { AgentService } from '../services/AgentService';
-import { prisma } from '../index';
+import { SocialBotService } from '../services/social/SocialBotService.js';
+import { ExecutionService } from '../services/ExecutionService.js';
+import { AgentService } from '../services/AgentService.js';
+import { prisma } from '../index.js';
 
 const router: Router = Router();
 
