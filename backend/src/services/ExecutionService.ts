@@ -547,7 +547,8 @@ export class ExecutionService {
   }
 
   /**
-   * Validate user has valid entitlement for agent
+   * Validate user has an active, unexpired entitlement for the agent.
+   * Permanent entitlements store expiresAt as NULL (matches on-chain expiration = 0).
    */
   private async validateEntitlement(
     userId: string,
@@ -557,9 +558,11 @@ export class ExecutionService {
       where: {
         userId,
         agentId,
-        expiresAt: {
-          gt: new Date() // Not expired
-        }
+        isActive: true,
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: new Date() } },
+        ],
       }
     });
 
