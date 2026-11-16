@@ -1,7 +1,8 @@
 # AgentNexus Backend Dockerfile
 # Multi-stage build for production optimization
 
-FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 AS base
+# node:24.22.3-bookworm-slim
+FROM node:24.22.3-bookworm-slim@sha256:dc26ae92c9fb15cf6b1d63e20f0944b2efe0f115b20e00be48fb23fceb061c54 AS base
 
 # Install system dependencies for native modules (required by ELIZAOS)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -10,6 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   g++ \
   git \
   && rm -rf /var/lib/apt/lists/*
+
+RUN npm install -g pnpm@10.28.2
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -22,11 +25,10 @@ COPY package.json pnpm-lock.yaml .npmrc ./
 
 # Install dependencies
 FROM base AS deps
-RUN corepack enable && corepack prepare pnpm@10.28.2 --activate && pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 # Build stage
 FROM base AS builder
-RUN corepack enable && corepack prepare pnpm@10.28.2 --activate
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
@@ -38,7 +40,8 @@ RUN pnpm run build
 RUN pnpm prune --prod
 
 # Production stage
-FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 AS runner
+# node:24.22.3-bookworm-slim
+FROM node:24.22.3-bookworm-slim@sha256:dc26ae92c9fb15cf6b1d63e20f0944b2efe0f115b20e00be48fb23fceb061c54 AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

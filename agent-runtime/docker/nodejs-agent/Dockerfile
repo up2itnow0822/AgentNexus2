@@ -1,7 +1,8 @@
 # AgentNexus Node.js Agent Template
 # Optimized for security and minimal attack surface
 
-FROM node:20-alpine
+# node:24.22.3-alpine
+FROM node:24.22.3-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
 
 # Use existing node user (uid/gid 1000) for security
 # Node alpine image comes with node:node user pre-configured
@@ -30,4 +31,3 @@ ENV OUTPUT_DIR=/tmp/output
 
 # Run the agent
 CMD ["node", "agent.js"]
-
